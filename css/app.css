@@ -88,7 +88,7 @@ ul { list-style: none; margin: 0; padding: 0; }
 
 .tabbar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
-  display: grid; grid-template-columns: repeat(4, 1fr);
+  display: grid; grid-template-columns: repeat(3, 1fr);
   padding: 0 var(--safe-right) var(--safe-bottom) var(--safe-left);
   background: color-mix(in srgb, var(--surface) 90%, transparent);
   -webkit-backdrop-filter: saturate(180%) blur(16px);
@@ -369,7 +369,7 @@ dialog.sheet::backdrop { background: rgb(0 0 0 / .4); }
   .chips.scroll { margin: 0; padding-left: 0; padding-right: 0; flex-wrap: wrap; }
 
   /* Tab bar items don't stretch across a wide screen */
-  .tabbar { grid-template-columns: repeat(4, minmax(0, 150px)); justify-content: center; }
+  .tabbar { grid-template-columns: repeat(3, minmax(0, 150px)); justify-content: center; }
 }
 
 /* Wide and tall enough: sheets become centered dialogs instead of bottom sheets */
