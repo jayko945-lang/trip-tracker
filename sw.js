@@ -4,7 +4,7 @@
 // is told an update is ready, and can ask for every file to be refreshed
 // before it reloads (so it never runs a mix of old and new files).
 // Bump VERSION when you add or rename files.
-const VERSION = 'v7';
+const VERSION = 'v8';
 const CACHE = `trip-tracker-${VERSION}`;
 const FILES = [
   './',

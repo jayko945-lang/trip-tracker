@@ -30,7 +30,7 @@ function resolve() {
 }
 
 export function render({ keepScroll = false } = {}) {
-  const y = window.scrollY;
+  const y = main.scrollTop;
   const { view, tab, params } = resolve();
   current = view(...params);
   document.title = current.title ? `${current.title} · Trip Tracker` : 'Trip Tracker';
@@ -38,10 +38,10 @@ export function render({ keepScroll = false } = {}) {
     <div class="tb-side">${current.back ? `<a class="tb-btn" href="${esc(current.back)}" aria-label="Back">${icons.back}<span>Back</span></a>` : ''}</div>
     <h1>${esc(current.title || 'Trip Tracker')}</h1>
     <div class="tb-side right">${current.right || ''}</div>`;
-  main.innerHTML = current.html;
+  main.innerHTML = `<div class="content">${current.html}</div>`;
   document.querySelectorAll('.tabbar a').forEach((a) => a.classList.toggle('active', a.dataset.tab === tab));
   current.mount?.(main);
-  window.scrollTo(0, keepScroll ? y : 0);
+  main.scrollTop = keepScroll ? y : 0;
 }
 
 /**
@@ -115,8 +115,35 @@ store.requestPersistence();
 // The service worker says when a newer version has been downloaded; we show a
 // bar, and "Reload" refreshes every cached file first so nothing is mixed.
 
+const JUST_UPDATED = 'tripTracker.justUpdated';
+
+/** Reload into the new version, after any updater still installing has finished. */
+async function applyUpdate() {
+  try { sessionStorage.setItem(JUST_UPDATED, String(Date.now())); } catch { /* ignore */ }
+  setTimeout(() => location.reload(), 8000); // never get stuck on "Updating…"
+  const reg = await navigator.serviceWorker.getRegistration().catch(() => null);
+  try { await reg?.update(); } catch { /* offline */ }
+  const pending = reg?.installing || reg?.waiting;
+  if (pending) {
+    // A new updater downloads every file fresh when it installs; wait for it to take over.
+    await new Promise((resolve) => {
+      if (pending.state === 'activated') return resolve();
+      pending.addEventListener('statechange', () => { if (pending.state === 'activated') resolve(); });
+    });
+    return location.reload();
+  }
+  const sw = navigator.serviceWorker.controller;
+  if (!sw) return location.reload();
+  sw.postMessage({ type: 'apply-update' }); // replies 'update-applied' once files are refreshed
+}
+
+/** True for a short while after the user tapped Reload (so a late announcement doesn't re-show the bar). */
+function justUpdated() {
+  try { return Date.now() - Number(sessionStorage.getItem(JUST_UPDATED) || 0) < 60000; } catch { return false; }
+}
+
 function showUpdateBar() {
-  if (document.getElementById('update-bar')) return;
+  if (document.getElementById('update-bar') || justUpdated()) return;
   const bar = document.createElement('div');
   bar.id = 'update-bar';
   bar.setAttribute('role', 'status');
@@ -125,10 +152,7 @@ function showUpdateBar() {
   bar.querySelector('button').onclick = () => {
     bar.querySelector('button').disabled = true;
     bar.querySelector('span').textContent = 'Updating…';
-    const sw = navigator.serviceWorker.controller;
-    if (!sw) return location.reload();
-    sw.postMessage({ type: 'apply-update' });
-    setTimeout(() => location.reload(), 8000); // fallback if no reply
+    applyUpdate();
   };
   document.body.appendChild(bar);
 }
