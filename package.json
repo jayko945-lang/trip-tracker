@@ -1,0 +1,10 @@
+{
+  "name": "trip-tracker",
+  "private": true,
+  "type": "module",
+  "description": "Offline PWA for school trips, robotics events and their paperwork. No build step; package.json exists only to run tests.",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "serve": "python3 -m http.server 8080"
+  }
+}
