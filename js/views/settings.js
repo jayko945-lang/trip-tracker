@@ -17,7 +17,7 @@ export default function settingsView() {
   const backupAge = last ? daysBetween(last.slice(0, 10), today) : null;
   const stale = backupAge === null || backupAge >= BACKUP_REMINDER_DAYS;
 
-  const html = `
+  const html = `<div class="panes"><div class="pane">
   <h2 class="section-title">Backup</h2>
   <div class="card">
     <p class="${stale ? 'warn' : ''}">${last
@@ -46,6 +46,7 @@ export default function settingsView() {
   </ul>
   <div class="stack"><button class="btn" data-action="addDay">Add no-school date</button></div>
 
+  </div><div class="pane">
   <h2 class="section-title">Classes and teams</h2>
   <div class="card">
     <div class="chips">${s.tags.length
@@ -76,6 +77,7 @@ export default function settingsView() {
   </ul>
   <div class="stack"><button class="btn subtle" data-action="resetTemplates">Reset lead times to defaults</button></div>
 
+  </div></div>
   <p class="muted small center pad">Trip Tracker · data stays on this device · no student names or grades</p>`;
 
   function mount(root) {

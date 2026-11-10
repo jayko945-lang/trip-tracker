@@ -11,6 +11,14 @@ An offline web app for one teacher to track field trips, robotics events and ove
 - **Settings**: no-school calendar (single dates and ranges, "No students" or "Student-free workday", plus a toggle for whether workdays count as school days, default off), class/team list, editable lead times and labels, and JSON backup/restore with a "last backed up" date. A reminder banner appears 30 days after the last backup.
 - **Add to Calendar**: exports a trip's due dates as an `.ics` file with a 7 AM alert on each due date. This stands in for push notifications.
 
+## Screen sizes
+
+The layout adapts to the screen and reflows live when you fold, unfold or rotate:
+
+- **Phones and the iPhone Duo outer screen:** one column.
+- **iPhone Duo unfolded, landscape and iPad (600pt and wider):** two panes. Home shows "Now" (overdue, needs a date, today) beside "Coming up" (this week, later). Trip detail puts the info beside the checklist. Trips is a card grid, Settings has two columns, and task sheets open as centered dialogs.
+- **Side-by-side apps (as narrow as 320pt):** compact single column.
+
 ## How due dates work
 
 Due dates count **backward from the trip start date**.

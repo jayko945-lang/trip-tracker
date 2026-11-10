@@ -2,7 +2,7 @@
 // with no network. Requests are served from the cache first; when online,
 // the cache is refreshed in the background so the next launch gets updates.
 // Bump VERSION when you add or rename files.
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = `trip-tracker-${VERSION}`;
 const FILES = [
   './',

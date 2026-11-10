@@ -45,10 +45,10 @@ export default function trips() {
     html += `<div class="empty"><p class="empty-title">No trips yet</p><a class="btn primary" href="#/new">Add a trip</a></div>`;
   } else {
     html += `<section class="group"><h2 class="group-title">Upcoming <span class="count">${upcoming.length}</span></h2>
-      ${upcoming.length ? `<ul class="cards">${upcoming.map((t) => card(t, today)).join('')}</ul>` : '<p class="muted pad">Nothing upcoming.</p>'}</section>`;
+      ${upcoming.length ? `<ul class="cards trip-grid">${upcoming.map((t) => card(t, today)).join('')}</ul>` : '<p class="muted pad">Nothing upcoming.</p>'}</section>`;
     if (past.length) {
       html += `<section class="group"><h2 class="group-title">Past <span class="count">${past.length}</span></h2>
-        <ul class="cards">${past.map((t) => card(t, today)).join('')}</ul></section>`;
+        <ul class="cards trip-grid">${past.map((t) => card(t, today)).join('')}</ul></section>`;
     }
   }
 

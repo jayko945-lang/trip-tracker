@@ -309,3 +309,82 @@ dialog.sheet::backdrop { background: rgb(0 0 0 / .4); }
 
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 @media (min-width: 600px) { .main { padding-top: 20px; } }
+
+/* ---- form factors ---------------------------------------------------------------
+   Narrow: side-by-side apps, small phones (< 360pt).
+   Wide:   iPhone Duo unfolded (7.6" inner display), landscape, iPad (>= 600pt).
+   Layout follows the viewport live, so folding/unfolding or rotating just reflows. */
+
+@media (min-width: 1000px) {
+  .d-info .stats dd { font-size: 18px; }
+  .d-info .stats dt { font-size: 12px; }
+}
+
+@media (max-width: 359px) {
+  .main { padding-left: calc(12px + var(--safe-left)); padding-right: calc(12px + var(--safe-right)); }
+  .field-row, .row-buttons { grid-template-columns: 1fr; }
+  .stats { gap: 6px; }
+  .stats dd { font-size: 16px; }
+  .segmented span { font-size: 13px; padding: 4px 2px; }
+  .check { width: 52px; }
+}
+
+@media (min-width: 600px) {
+  .main {
+    max-width: 1180px;
+    padding-left: calc(24px + var(--safe-left));
+    padding-right: calc(24px + var(--safe-right));
+  }
+  .topbar h1 { max-width: 50vw; }
+
+  /* Home and Settings: two columns */
+  .panes { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; align-items: start; }
+  .pane > .group:first-child, .pane > .section-title:first-child { margin-top: 18px; }
+
+  /* Trip detail: info on the left, checklist on the right */
+  .detail {
+    display: grid; grid-template-columns: minmax(270px, 5fr) 7fr; gap: 0 24px;
+    grid-template-rows: auto auto 1fr; align-items: start;
+  }
+  .d-info { grid-column: 1; grid-row: 1; }
+  .d-notes { grid-column: 1; grid-row: 2; }
+  .d-actions { grid-column: 1; grid-row: 3; }
+  .d-list { grid-column: 2; grid-row: 1 / span 3; }
+  .d-list > .section-title:first-child { margin-top: 0; }
+  .d-info .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .d-info .stats div { padding: 8px; }
+  .d-info .stats dt { font-size: 11px; }
+  .d-info .stats dd { font-size: 15px; }
+
+  /* Trips: card grid */
+  .trip-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px; background: none; border-radius: 0; overflow: visible;
+  }
+  .trip-grid li { border-radius: var(--radius); overflow: hidden; }
+  .trip-grid .trip-card { height: 100%; }
+
+  /* Forms stay a comfortable reading width */
+  #trip-form { max-width: 640px; margin: 0 auto; }
+  .chips.scroll { margin: 0; padding-left: 0; padding-right: 0; flex-wrap: wrap; }
+
+  /* Tab bar items don't stretch across a wide screen */
+  .tabbar { grid-template-columns: repeat(4, minmax(0, 150px)); justify-content: center; }
+}
+
+/* Wide and tall enough: sheets become centered dialogs instead of bottom sheets */
+@media (min-width: 600px) and (min-height: 560px) {
+  dialog.sheet { margin: auto; max-width: 520px; border-radius: 20px; }
+  .sheet-grab { display: none; }
+  .sheet-inner { padding: 20px 22px 22px; max-height: 80vh; }
+}
+
+/* Short screens (Duo outer display, landscape phones): trim vertical chrome */
+@media (max-height: 700px) {
+  .empty { padding: 28px 16px; }
+  .section-title { margin-top: 20px; }
+}
+@media (max-height: 480px) {
+  :root { --tabbar-h: 50px; }
+  .tabbar a span { display: none; }
+}

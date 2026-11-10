@@ -18,12 +18,19 @@ export default function home() {
   } else if (!total) {
     html += `<div class="empty"><p class="empty-title">All caught up</p><p>No open paperwork.</p></div>`;
   } else {
-    for (const [key, label] of BUCKETS) {
+    // Two panes on wide screens (iPhone Duo inner display, iPad); stacked on phones.
+    const section = (key, label) => {
       const list = groups[key];
-      if (!list.length) continue;
-      html += `<section class="group ${key}"><h2 class="group-title">${label} <span class="count">${list.length}</span></h2>
+      if (!list.length) return '';
+      return `<section class="group ${key}"><h2 class="group-title">${label} <span class="count">${list.length}</span></h2>
         <ul class="tasks">${list.map(({ trip, task }) => taskRow(trip, task, { today, showTrip: true })).join('')}</ul></section>`;
-    }
+    };
+    const pane = (keys) => BUCKETS.filter(([k]) => keys.includes(k)).map(([k, l]) => section(k, l)).join('');
+    const now = pane(['overdue', 'nodate', 'today']);
+    const soon = pane(['week', 'later']);
+    html += now && soon
+      ? `<div class="panes"><div class="pane">${now}</div><div class="pane">${soon}</div></div>`
+      : now + soon;
   }
 
   return {

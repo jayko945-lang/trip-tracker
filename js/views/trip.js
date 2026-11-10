@@ -55,7 +55,8 @@ export default function tripView(id) {
       </span></div>`
     : '';
 
-  const html = `
+  const html = `<div class="detail">
+    <div class="d-info">
     ${ratioWarn}
     <div class="card info">
       <p class="trip-sub">${esc(KINDS[trip.kind].label)} · ${fmtRange(trip.startDate, trip.endDate)}</p>
@@ -76,6 +77,8 @@ export default function tripView(id) {
       </dl>` : ''}
     </div>
 
+    </div>
+    <div class="d-list">
     <h2 class="section-title">Checklist</h2>
     ${checklist(trip, today, tplByKey)}
     <div class="row-buttons">
@@ -83,12 +86,14 @@ export default function tripView(id) {
       <button class="btn" data-action="ics">Add to Calendar</button>
     </div>
 
-    ${trip.notes ? `<h2 class="section-title">Notes</h2><div class="card notes">${esc(trip.notes)}</div>` : ''}
+    </div>
+    <div class="d-notes">${trip.notes ? `<h2 class="section-title">Notes</h2><div class="card notes">${esc(trip.notes)}</div>` : ''}</div>
 
-    <div class="stack spaced">
+    <div class="stack spaced d-actions">
       <a class="btn" href="#/edit/${encodeURIComponent(trip.id)}">Edit trip</a>
       <button class="btn danger subtle" data-action="delete">Delete trip</button>
-    </div>`;
+    </div>
+  </div>`;
 
   return {
     title: trip.title,
