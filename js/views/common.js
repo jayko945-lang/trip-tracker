@@ -22,13 +22,13 @@ export function backupBanner() {
  * One task row. In Home, the body links to the trip; in the trip detail,
  * the body opens the task sheet.
  */
-export function taskRow(trip, task, { today, showTrip = false, rule = '' } = {}) {
+export function taskRow(trip, task, { today, showTrip = false, tripName = showTrip, rule = '' } = {}) {
   const due = effectiveDue(task);
   const open = isOpen(task);
   const bucket = open ? bucketFor(task, today) : '';
   const cls = ['task', task.status, bucket, task.inactive ? 'inactive' : ''].join(' ');
   const meta = [];
-  if (showTrip) meta.push(`<span class="trip-name">${esc(trip.title)}</span>`);
+  if (tripName) meta.push(`<span class="trip-name">${esc(trip.title)}</span>`);
   if (showTrip) {
     if (due) meta.push(fmtDate(due));
     if (open && due) meta.push(`<span class="rel">${relDays(due, today)}</span>`);
@@ -42,7 +42,8 @@ export function taskRow(trip, task, { today, showTrip = false, rule = '' } = {})
   if (task.key === 'itineraryPacket' && !task.inactive) badges.push('<span class="badge hard">Hard deadline</span>');
   if (showTrip && task.dueOverride && !task.custom) badges.push('<span class="badge">Custom date</span>');
   const body = `<span class="task-label">${esc(task.label)} ${badges.join(' ')}</span>
-    <span class="task-meta">${meta.join(' · ')}</span>`;
+    <span class="task-meta">${meta.join(' · ')}</span>
+    ${task.note ? `<span class="task-note">${esc(task.note)}</span>` : ''}`;
   const check = task.status === 'na'
     ? `<button class="check na" data-action="toggle" data-trip="${esc(trip.id)}" data-key="${esc(task.key)}" aria-label="Restore to to-do">–</button>`
     : `<button class="check" data-action="toggle" data-trip="${esc(trip.id)}" data-key="${esc(task.key)}"

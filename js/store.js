@@ -36,6 +36,7 @@ function normalizeTask(t) {
     completedAt: t.completedAt ? String(t.completedAt) : null,
     inactive: !!t.inactive,
     custom: !!t.custom,
+    note: str(t.note, 1000),
   };
 }
 
@@ -172,8 +173,18 @@ export function saveTrip(input) {
   return trip;
 }
 
+/** Removes a trip; returns what restoreTrip needs to undo it. */
 export function deleteTrip(id) {
-  state.trips = state.trips.filter((t) => t.id !== id);
+  const index = state.trips.findIndex((t) => t.id === id);
+  if (index < 0) return null;
+  const [trip] = state.trips.splice(index, 1);
+  persist();
+  return { trip, index };
+}
+
+export function restoreTrip({ trip, index }) {
+  if (getTrip(trip.id)) return;
+  state.trips.splice(Math.min(index, state.trips.length), 0, trip);
   persist();
 }
 
@@ -200,10 +211,21 @@ export function addCustomTask(tripId, label, due) {
   persist();
 }
 
+/** Deletes a custom task; returns what restoreTask needs to undo it. */
 export function deleteTask(tripId, key) {
   const trip = getTrip(tripId);
-  if (!trip) return;
-  trip.tasks = trip.tasks.filter((t) => !(t.key === key && t.custom));
+  if (!trip) return null;
+  const index = trip.tasks.findIndex((t) => t.key === key && t.custom);
+  if (index < 0) return null;
+  const [task] = trip.tasks.splice(index, 1);
+  persist();
+  return { tripId, task, index };
+}
+
+export function restoreTask({ tripId, task, index }) {
+  const trip = getTrip(tripId);
+  if (!trip || trip.tasks.some((t) => t.key === task.key)) return;
+  trip.tasks.splice(Math.min(index, trip.tasks.length), 0, task);
   persist();
 }
 
@@ -211,6 +233,15 @@ export function deleteTask(tripId, key) {
 
 export function updateSettings(patch) {
   state.settings = normalizeSettings({ ...state.settings, ...patch });
+  refreshAll();
+  persist();
+}
+
+/** Copy of settings, for undoing a settings change. */
+export const snapshotSettings = () => structuredClone(state.settings);
+
+export function restoreSettings(snapshot) {
+  state.settings = normalizeSettings(snapshot);
   refreshAll();
   persist();
 }

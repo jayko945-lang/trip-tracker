@@ -4,12 +4,15 @@ An offline web app for one teacher to track field trips, robotics events and ove
 
 ## Features
 
-- **To do** (Home): every open task across all trips, grouped Overdue / Needs a due date / Today / This week / Later and sorted by due date. Tap the circle to complete a task (Undo is offered); tap the text to open the trip. Trips that ended more than 7 days ago drop off this screen.
+- **To do** (Home): every open task across all trips, grouped Overdue / Needs a due date / Today / This week / Later, and within each section grouped by trip. **Later** is collapsed until you tap Show. Tap the circle to complete a task (Undo is offered); tap the text or the trip name to open the trip. Trips that ended more than 7 days ago drop off this screen.
 - **Trips**: upcoming and past trips, filterable by class or team.
-- **Trip detail**: checklist grouped by due date, flags, student count, chaperone-ratio warning, cost, amount collected and outstanding, and notes. Tap a task to override its due date, mark it N/A, or set the date for a manual-date task. You can add your own tasks.
+- **Trip detail**: checklist grouped by due date, flags, student count, chaperone-ratio warning, cost, amount collected and outstanding, and notes. Tap a task to override its due date, mark it N/A, set the date for a manual-date task, or add a short **note** (for example a bus confirmation number). Notes show under the task and save however you close the sheet. You can add your own tasks.
 - **New/Edit trip**: choosing a kind presets the flags. Changing a flag adds or removes tasks; completed tasks are never lost (they move to "Completed, no longer required").
 - **Settings**: no-school calendar (single dates and ranges, "No students" or "Student-free workday", plus a toggle for whether workdays count as school days, default off), class/team list, editable lead times and labels, and JSON backup/restore with a "last backed up" date. A reminder banner appears 30 days after the last backup.
-- **Add to Calendar**: exports a trip's due dates as an `.ics` file with a 7 AM alert on each due date. This stands in for push notifications.
+- **Add to Calendar**: exports a trip's due dates as an `.ics` file with a 7 AM alert on each due date. This stands in for push notifications. The Trips screen can export **all upcoming trips** in one file, or just the ones matching the class/team filter. Calendar files are a snapshot, so re-adding a trip after changes may create duplicates in the iPhone Calendar.
+- **Undo instead of "Are you sure?"**: deleting a trip or a custom task, removing a no-school date or class/team, and resetting lead times all happen right away with an Undo button. Importing a backup still asks first, because it replaces everything.
+- **Updates**: when a new version has downloaded, a "A new version is ready" bar appears. Tap **Reload** to switch to it.
+- **Text size**: on iPhone, text follows Settings → Display & Brightness → Text Size.
 
 ## Screen sizes
 
@@ -108,7 +111,7 @@ git push -u origin main
 
 ### Updating the app
 
-When you push changes, the installed app picks them up in the background and shows them on the **next** launch. If you add, remove or rename a file, also add it to the `FILES` list in `sw.js` and change `VERSION` (for example to `'v2'`). A test (`tests/sw.test.js`) fails if that list doesn't match the files on disk.
+When you push changes, the installed app downloads them in the background and shows a "new version is ready" bar; tap Reload (or just open the app again later). If you add, remove or rename a file, also add it to the `FILES` list in `sw.js` and change `VERSION` (for example to `'v2'`). A test (`tests/sw.test.js`) fails if that list doesn't match the files on disk.
 
 ## Backups (important)
 

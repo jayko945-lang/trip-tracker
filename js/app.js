@@ -64,6 +64,34 @@ if (store.lastSaveError()) toast('Could not save — storage is full or blocked.
 store.onChange(() => { if (store.lastSaveError()) toast('Could not save — storage is full or blocked.'); });
 store.requestPersistence();
 
+// ---- updates ---------------------------------------------------------------
+// The service worker says when a newer version has been downloaded; we show a
+// bar, and "Reload" refreshes every cached file first so nothing is mixed.
+
+function showUpdateBar() {
+  if (document.getElementById('update-bar')) return;
+  const bar = document.createElement('div');
+  bar.id = 'update-bar';
+  bar.setAttribute('role', 'status');
+  bar.innerHTML = '<span>A new version is ready.</span><button type="button">Reload</button>';
+  bar.querySelector('button').onclick = () => {
+    bar.querySelector('button').disabled = true;
+    bar.querySelector('span').textContent = 'Updating…';
+    const sw = navigator.serviceWorker.controller;
+    if (!sw) return location.reload();
+    sw.postMessage({ type: 'apply-update' });
+    setTimeout(() => location.reload(), 8000); // fallback if no reply
+  };
+  document.body.appendChild(bar);
+}
+
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('message', (e) => {
+    if (e.data?.type === 'update-ready') showUpdateBar();
+    if (e.data?.type === 'update-applied') location.reload();
+  });
+  // A new service worker took over (sw.js itself changed).
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) showUpdateBar(); });
   navigator.serviceWorker.register('./sw.js').catch(() => {});
 }

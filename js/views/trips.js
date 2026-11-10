@@ -1,7 +1,8 @@
 import * as store from '../store.js';
 import { KINDS } from '../templates.js';
 import { tripProgress, isOpen, bucketFor } from '../domain.js';
-import { esc, fmtRange, icons } from '../ui.js';
+import { esc, fmtRange, icons, saveFile, toast } from '../ui.js';
+import { buildICS } from '../ics.js';
 import { rerender } from '../app.js';
 import { backupBanner, todayISO } from './common.js';
 
@@ -46,6 +47,11 @@ export default function trips() {
   } else {
     html += `<section class="group"><h2 class="group-title">Upcoming <span class="count">${upcoming.length}</span></h2>
       ${upcoming.length ? `<ul class="cards trip-grid">${upcoming.map((t) => card(t, today)).join('')}</ul>` : '<p class="muted pad">Nothing upcoming.</p>'}</section>`;
+    if (upcoming.length) {
+      html += `<div class="stack"><button class="btn" data-action="icsAll">${upcoming.length === 1
+        ? 'Add this trip to Calendar'
+        : `Add ${filter ? `these ${upcoming.length}` : `all ${upcoming.length} upcoming`} trips to Calendar`}</button></div>`;
+    }
     if (past.length) {
       html += `<section class="group"><h2 class="group-title">Past <span class="count">${past.length}</span></h2>
         <ul class="cards trip-grid">${past.map((t) => card(t, today)).join('')}</ul></section>`;
@@ -57,6 +63,12 @@ export default function trips() {
     right: '<a class="tb-btn" href="#/new" aria-label="New trip">New</a>',
     html,
     actions: {
+      async icsAll() {
+        const name = filter ? `${filter.replace(/[^\w\- ]+/g, '').trim() || 'trips'} trips.ics` : 'Upcoming trips.ics';
+        if (await saveFile(name, 'text/calendar', buildICS(upcoming))) {
+          toast(`${upcoming.length} trip${upcoming.length === 1 ? '' : 's'} exported`);
+        }
+      },
       filter(el) {
         filter = el.dataset.tag;
         try { localStorage.setItem(PREF, filter); } catch { /* ignore */ }

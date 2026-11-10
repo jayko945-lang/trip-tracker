@@ -1,8 +1,10 @@
 // Offline support. Every app file is cached on install, so the app works
 // with no network. Requests are served from the cache first; when online,
-// the cache is refreshed in the background so the next launch gets updates.
+// each file is re-downloaded in the background. If a file changed, the page
+// is told an update is ready, and can ask for every file to be refreshed
+// before it reloads (so it never runs a mix of old and new files).
 // Bump VERSION when you add or rename files.
-const VERSION = 'v4';
+const VERSION = 'v5';
 const CACHE = `trip-tracker-${VERSION}`;
 const FILES = [
   './',
@@ -45,6 +47,11 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+async function notifyClients(msg) {
+  const clients = await self.clients.matchAll({ type: 'window' });
+  clients.forEach((c) => c.postMessage(msg));
+}
+
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
@@ -52,14 +59,22 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return;
 
   // App navigations always get the cached shell (the app uses hash routes).
-  const key = req.mode === 'navigate' ? './index.html' : req;
+  const navigate = req.mode === 'navigate';
+  const key = navigate ? './index.html' : req;
 
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
-    const cached = await cache.match(key, { ignoreSearch: req.mode === 'navigate' });
-    const network = fetch(req.mode === 'navigate' ? './index.html' : req)
-      .then((res) => {
-        if (res.ok && res.type === 'basic') cache.put(key, res.clone());
+    const cached = await cache.match(key, { ignoreSearch: navigate });
+    const old = cached?.clone();
+    // 'no-cache' revalidates with the server instead of trusting the HTTP cache.
+    const network = fetch(navigate ? './index.html' : req.url, { cache: 'no-cache' })
+      .then(async (res) => {
+        if (!res.ok || res.type !== 'basic') return res;
+        if (old) {
+          const [a, b] = await Promise.all([old.text(), res.clone().text()]);
+          if (a !== b) await notifyClients({ type: 'update-ready' });
+        }
+        await cache.put(key, res.clone());
         return res;
       })
       .catch(() => null);
@@ -68,5 +83,17 @@ self.addEventListener('fetch', (event) => {
       return cached;
     }
     return (await network) || new Response('Offline', { status: 503, statusText: 'Offline' });
+  })());
+});
+
+// The page asks for a full refresh when the user taps "Reload".
+self.addEventListener('message', (event) => {
+  if (event.data?.type !== 'apply-update') return;
+  event.waitUntil((async () => {
+    try {
+      const cache = await caches.open(CACHE);
+      await cache.addAll(FILES.map((f) => new Request(f, { cache: 'reload' })));
+    } catch { /* offline: reload with what we have */ }
+    event.source?.postMessage({ type: 'update-applied' });
   })());
 });

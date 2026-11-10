@@ -105,5 +105,21 @@ test('ICS export contains all-day events', () => {
   assert.match(ics, /BEGIN:VCALENDAR/);
   assert.match(ics, /DTSTART;VALUE=DATE:20261210/);
   assert.match(ics, /Zoo\\, day\\; trip/);
-  assert.ok(ics.split('\r\n').every((line) => line.length <= 75));
+  const enc = new TextEncoder();
+  assert.ok(ics.split('\r\n').every((line) => enc.encode(line).length <= 75));
+});
+
+test('ICS: several trips in one file, notes included, long lines folded by bytes', () => {
+  const a = refreshTrip(trip('field', { id: 'a', title: 'Zoo' }), templates, closed);
+  const b = refreshTrip(trip('robotics', { id: 'b', title: 'FTC — Qualifier ✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓' }), templates, closed);
+  a.tasks[0].note = 'Bus confirmation #4471';
+  const ics = buildICS([a, b]);
+  assert.equal((ics.match(/BEGIN:VCALENDAR/g) || []).length, 1);
+  assert.match(ics, /UID:trip-a@/);
+  assert.match(ics, /UID:trip-b@/);
+  const unfolded = ics.replace(/\r\n /g, '');
+  assert.match(unfolded, /Note: Bus confirmation #4471/);
+  assert.match(unfolded, /FTC — Qualifier ✓+/);
+  const enc = new TextEncoder();
+  assert.ok(ics.split('\r\n').every((line) => enc.encode(line).length <= 75));
 });

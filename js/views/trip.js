@@ -2,7 +2,7 @@ import * as store from '../store.js';
 import { KINDS, FLAGS } from '../templates.js';
 import { effectiveDue, chaperoneCheck, ruleText, tripProgress, isOpen, bucketFor } from '../domain.js';
 import { buildICS } from '../ics.js';
-import { esc, fmtDate, fmtRange, relDays, money, icons, sheet, confirmSheet, toast, saveFile } from '../ui.js';
+import { esc, fmtDate, fmtRange, relDays, money, icons, sheet, toast, saveFile } from '../ui.js';
 import { rerender } from '../app.js';
 import { taskRow, todayISO } from './common.js';
 
@@ -133,11 +133,14 @@ export default function tripView(id) {
         const name = `${trip.title.replace(/[^\w\- ]+/g, '').trim() || 'trip'}.ics`;
         await saveFile(name, 'text/calendar', buildICS(trip));
       },
-      async delete() {
-        if (await confirmSheet(`Delete “${trip.title}”? This can't be undone.`, { ok: 'Delete trip', danger: true })) {
-          store.deleteTrip(trip.id);
-          toast('Trip deleted');
-          location.hash = '#/trips';
+      delete() {
+        const removed = store.deleteTrip(trip.id);
+        location.hash = '#/trips';
+        if (removed) {
+          toast(`Deleted “${trip.title}”`, {
+            duration: 7000,
+            undo: () => { store.restoreTrip(removed); location.hash = `#/trip/${encodeURIComponent(trip.id)}`; },
+          });
         }
       },
     },
@@ -153,8 +156,10 @@ function taskSheet(trip, task, tpl) {
     <p class="rule"><strong>${esc(rule)}</strong>${computed ? ` → ${fmtDate(computed, { year: true })}` : ''}</p>
     <label class="field"><span>${manual ? 'Due date' : 'Override due date'}</span>
       <input type="date" name="due" value="${esc(task.dueOverride || computed || '')}"></label>
+    <label class="field"><span>Note</span>
+      <textarea name="note" rows="2" maxlength="1000" placeholder="e.g. Bus confirmation #, who you emailed">${esc(task.note || '')}</textarea></label>
     <div class="stack">
-      <button class="btn primary" data-sa="saveDate">Save date</button>
+      <button class="btn primary" data-sa="saveDate">Save</button>
       ${task.dueOverride && !manual ? '<button class="btn" data-sa="clearDate">Use computed date</button>' : ''}
       ${task.status === 'done'
         ? '<button class="btn" data-sa="todo">Mark not done</button>'
@@ -167,7 +172,7 @@ function taskSheet(trip, task, tpl) {
     </div>
     ${task.completedAt ? `<p class="muted small">Completed ${esc(new Date(task.completedAt).toLocaleString())}</p>` : ''}
   </div>`;
-  sheet({
+  const dlg = sheet({
     title: task.label,
     body,
     actions: {
@@ -180,7 +185,21 @@ function taskSheet(trip, task, tpl) {
       done() { store.updateTask(trip.id, task.key, { status: 'done' }); rerender(); },
       todo() { store.updateTask(trip.id, task.key, { status: 'todo' }); rerender(); },
       na() { store.updateTask(trip.id, task.key, { status: 'na' }); rerender(); },
-      remove() { store.deleteTask(trip.id, task.key); rerender(); },
+      remove() {
+        const removed = store.deleteTask(trip.id, task.key);
+        rerender();
+        if (removed) toast('Task deleted', { duration: 6000, undo: () => { store.restoreTask(removed); rerender(); } });
+      },
     },
+  });
+  // The note saves however the sheet is closed (any button, or tapping outside).
+  const noteEl = dlg.querySelector('[name=note]');
+  dlg.addEventListener('close', () => {
+    const note = noteEl.value.trim();
+    const current = store.getTrip(trip.id)?.tasks.find((t) => t.key === task.key);
+    if (current && note !== (current.note || '')) {
+      store.updateTask(trip.id, task.key, { note });
+      rerender();
+    }
   });
 }

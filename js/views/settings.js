@@ -144,11 +144,11 @@ export default function settingsView() {
       addDay() { dayForm(); },
       editDay(el) { dayForm(store.getSettings().noSchool.find((d) => d.id === el.dataset.id)); },
       editTag(el) { tagSheet(el.dataset.tag); },
-      async resetTemplates() {
-        if (await confirmSheet('Reset all lead times and labels to the district defaults?', { ok: 'Reset' })) {
-          store.updateSettings({ templateOverrides: {} });
-          rerender();
-        }
+      resetTemplates() {
+        const before = store.snapshotSettings();
+        store.updateSettings({ templateOverrides: {} });
+        rerender();
+        toast('Lead times reset to defaults', { duration: 7000, undo: () => { store.restoreSettings(before); rerender(); } });
       },
     },
   };
@@ -191,9 +191,12 @@ function dayForm(entry) {
         rerender();
       },
       remove() {
+        const before = store.snapshotSettings();
         store.updateSettings({ noSchool: store.getSettings().noSchool.filter((d) => d.id !== entry.id) });
-        toast('Removed. Due dates updated.');
         rerender();
+        toast(`Removed ${entry.label || 'date'}. Due dates updated.`, {
+          duration: 7000, undo: () => { store.restoreSettings(before); rerender(); },
+        });
       },
     },
   });
@@ -212,7 +215,12 @@ function tagSheet(tag) {
       <p class="muted small">Removing hides it from the pick list. Trips keep the tag.</p></div>`,
     actions: {
       rename(btn, dlg) { store.renameTag(tag, dlg.querySelector('[name=name]').value); rerender(); },
-      remove() { store.removeTag(tag); rerender(); },
+      remove() {
+        const before = store.snapshotSettings();
+        store.removeTag(tag);
+        rerender();
+        toast(`Removed “${tag}”`, { duration: 7000, undo: () => { store.restoreSettings(before); rerender(); } });
+      },
     },
   });
 }
