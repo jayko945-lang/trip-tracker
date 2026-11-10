@@ -154,7 +154,10 @@ ul { list-style: none; margin: 0; padding: 0; }
 
 /* tasks */
 .task { display: flex; align-items: stretch; transition: opacity .25s, transform .25s; }
-.task.completing { opacity: .3; }
+.task.completing .check { color: var(--accent-text); }
+.task.completing .check svg { background: var(--ok); border-color: var(--ok); transform: scale(1.12); }
+.check svg { transition: background-color .2s, border-color .2s, transform .2s cubic-bezier(.3, 1.6, .5, 1); }
+.task.expanded { transition: box-shadow .2s; }
 .check {
   flex: none; width: 60px; display: grid; place-items: center;
   background: none; border: 0; padding: 0; color: transparent; cursor: pointer;
@@ -295,14 +298,20 @@ select { background-image: linear-gradient(45deg, transparent 50%, var(--muted) 
 dialog.sheet {
   margin: auto auto 0; width: 100%; max-width: 560px; max-height: 88vh; padding: 0; border: 0;
   background: var(--surface); color: var(--text); border-radius: 20px 20px 0 0;
-  animation: up .22s ease-out;
+  animation: up .3s cubic-bezier(.2, .8, .2, 1);
 }
+dialog.sheet[open]::backdrop { animation: fade-in .3s ease; }
+dialog.sheet.closing { animation: down .2s ease-in forwards; }
+dialog.sheet.closing::backdrop { animation: fade-out .2s ease-in forwards; }
 dialog.sheet::backdrop { background: rgb(0 0 0 / .4); }
 .sheet-inner { outline: none; padding: 8px 18px calc(18px + var(--safe-bottom)); overflow-y: auto; max-height: 88vh; display: flex; flex-direction: column; gap: 12px; }
 .sheet-grab { width: 40px; height: 5px; border-radius: 99px; background: var(--line); margin: 0 auto 6px; }
 .sheet-title { font-size: 1.118rem; font-weight: 700; }
 .rule { background: var(--surface-2); padding: 10px 12px; border-radius: 10px; }
 @keyframes up { from { transform: translateY(40px); opacity: 0; } }
+@keyframes down { to { transform: translateY(60px); opacity: 0; } }
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes fade-out { to { opacity: 0; } }
 
 #toast {
   position: fixed; left: 50%; bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 14px); z-index: 50;
@@ -437,3 +446,36 @@ details.group > summary::-webkit-details-marker { display: none; }
 .task-panel-buttons .btn { background: var(--surface-2); min-height: 46px; }
 .task-panel-buttons .btn.primary { background: var(--accent); }
 @media (max-width: 359px) { .task-panel { padding-left: 14px; } }
+
+/* ---- smooth transitions (View Transitions API, iOS 18+) ---------------------------
+   Elements tagged with --vt slide and resize to their new place on every redraw;
+   everything else cross-fades. */
+[style*="--vt"] { view-transition-name: var(--vt); }
+/* Taps go through to the real page while an animation plays, so quick taps are never lost */
+::view-transition { pointer-events: none; }
+/* Between screens: plain cross-fade, no flying rows */
+html.vt-nav [style*="--vt"] { view-transition-name: none; }
+
+::view-transition-group(*) {
+  animation-duration: .32s;
+  animation-timing-function: cubic-bezier(.2, .8, .2, 1);
+}
+::view-transition-old(*), ::view-transition-new(*) {
+  animation-duration: .24s;
+  /* keep text at its real size while the box grows/shrinks */
+  height: 100%; object-fit: none; object-position: top;
+}
+/* A row that grows reveals its drop-down instead of overlapping rows below */
+::view-transition-image-pair(*) { overflow: clip; }
+/* Screen changes: quick fade */
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .18s; }
+/* Header, tab bar, toast and update bar stay above rows sliding underneath */
+::view-transition-group(vt-topbar), ::view-transition-group(vt-tabbar),
+::view-transition-group(vt-toast), ::view-transition-group(vt-updatebar) { z-index: 100; animation-duration: 0s; }
+
+#update-bar { animation: drop .35s cubic-bezier(.2, .8, .2, 1); }
+@keyframes drop { from { transform: translate(-50%, -14px); opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}

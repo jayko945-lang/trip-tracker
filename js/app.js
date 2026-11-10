@@ -1,6 +1,6 @@
 // App shell: hash router, header, tab bar, delegated actions.
 import * as store from './store.js';
-import { esc, icons, toast } from './ui.js';
+import { esc, icons, toast, reduceMotion } from './ui.js';
 import home from './views/home.js';
 import trips from './views/trips.js';
 import trip from './views/trip.js';
@@ -44,7 +44,54 @@ export function render({ keepScroll = false } = {}) {
   window.scrollTo(0, keepScroll ? y : 0);
 }
 
-export const rerender = () => render({ keepScroll: true });
+/**
+ * Animate a redraw with the View Transitions API (iOS 18+): tagged elements
+ * slide/resize to their new spots, everything else cross-fades. Falls back to
+ * an instant redraw when unsupported, when Reduce Motion is on, or while a
+ * sheet is open (it covers the screen anyway).
+ */
+let activeTransition = null;
+let rescueUntil = 0;
+
+function transition(update, { nav = false } = {}) {
+  if (!document.startViewTransition || reduceMotion() || document.hidden || document.querySelector('dialog[open]')) {
+    update();
+    return;
+  }
+  const root = document.documentElement;
+  // Between screens, just cross-fade; don't fly rows from one screen to another.
+  root.classList.toggle('vt-nav', nav);
+  const t = document.startViewTransition(update);
+  activeTransition = t;
+  t.ready.catch(() => {}); // a newer redraw interrupted this one; that's fine
+  t.finished.finally(() => {
+    if (activeTransition === t) activeTransition = null;
+    root.classList.remove('vt-nav');
+  });
+}
+
+export const rerender = () => transition(() => render({ keepScroll: true }));
+
+// While an animation plays, the browser sends taps to the page background.
+// So a tap that starts mid-animation finishes the animation at once, and the
+// tap is handed to whatever is now under the finger. Quick taps are never lost.
+document.addEventListener('pointerdown', () => {
+  if (!activeTransition) return;
+  activeTransition.skipTransition();
+  rescueUntil = performance.now() + 1500;
+}, true);
+
+document.addEventListener('click', (e) => {
+  if (performance.now() > rescueUntil) return;
+  if (e.target !== document.documentElement && e.target !== document.body) return;
+  rescueUntil = 0;
+  const real = document.elementFromPoint(e.clientX, e.clientY);
+  if (!real || real === document.documentElement || real === document.body) return;
+  e.preventDefault();
+  e.stopPropagation();
+  if (real.matches('input, textarea, select')) real.focus();
+  real.click();
+}, true);
 
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-action]');
@@ -55,7 +102,7 @@ document.addEventListener('click', (e) => {
   fn(el, e);
 });
 
-window.addEventListener('hashchange', () => render());
+window.addEventListener('hashchange', () => transition(() => render(), { nav: true }));
 
 store.load();
 render();
@@ -73,6 +120,7 @@ function showUpdateBar() {
   const bar = document.createElement('div');
   bar.id = 'update-bar';
   bar.setAttribute('role', 'status');
+  bar.style.setProperty('--vt', 'vt-updatebar');
   bar.innerHTML = '<span>A new version is ready.</span><button type="button">Reload</button>';
   bar.querySelector('button').onclick = () => {
     bar.querySelector('button').disabled = true;

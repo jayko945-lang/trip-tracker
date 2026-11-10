@@ -2,7 +2,7 @@ import * as store from '../store.js';
 import { KINDS, FLAGS } from '../templates.js';
 import { effectiveDue, chaperoneCheck, ruleText, tripProgress, isOpen, bucketFor } from '../domain.js';
 import { buildICS } from '../ics.js';
-import { esc, fmtDate, fmtRange, relDays, money, icons, sheet, toast, saveFile } from '../ui.js';
+import { esc, fmtDate, fmtRange, relDays, money, icons, sheet, toast, saveFile, vt } from '../ui.js';
 import { rerender } from '../app.js';
 import { taskRow, todayISO } from './common.js';
 
@@ -25,11 +25,11 @@ function checklist(trip, today, tplByKey) {
     const head = d
       ? `${fmtDate(d)} <span class="rel ${overdue ? 'danger' : ''}">${open ? relDays(d, today) : 'Done'}</span>`
       : 'Needs a due date';
-    html += `<section class="group"><h3 class="group-title small">${head}</h3>
+    html += `<section class="group"><h3 class="group-title small"${vt(`d-${d || 'none'}`)}>${head}</h3>
       <ul class="tasks">${list.map((t) => taskRow(trip, t, { today, rule: rule(t) })).join('')}</ul></section>`;
   }
   if (retired.length) {
-    html += `<section class="group"><h3 class="group-title small">Completed, no longer required</h3>
+    html += `<section class="group"><h3 class="group-title small"${vt('d-retired')}>Completed, no longer required</h3>
       <ul class="tasks">${retired.map((t) => taskRow(trip, t, { today })).join('')}</ul></section>`;
   }
   return html;
@@ -81,15 +81,15 @@ export default function tripView(id) {
     <div class="d-list">
     <h2 class="section-title">Checklist</h2>
     ${checklist(trip, today, tplByKey)}
-    <div class="row-buttons">
+    <div class="row-buttons"${vt('rowbuttons')}>
       <button class="btn" data-action="addTask">Add task</button>
       <button class="btn" data-action="ics">Add to Calendar</button>
     </div>
 
     </div>
-    <div class="d-notes">${trip.notes ? `<h2 class="section-title">Notes</h2><div class="card notes">${esc(trip.notes)}</div>` : ''}</div>
+    <div class="d-notes"${vt('notes')}>${trip.notes ? `<h2 class="section-title">Notes</h2><div class="card notes">${esc(trip.notes)}</div>` : ''}</div>
 
-    <div class="stack spaced d-actions">
+    <div class="stack spaced d-actions"${vt('actions')}>
       <a class="btn" href="#/edit/${encodeURIComponent(trip.id)}">Edit trip</a>
       <button class="btn danger subtle" data-action="delete">Delete trip</button>
     </div>

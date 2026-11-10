@@ -1,7 +1,7 @@
 import * as store from '../store.js';
 import { KINDS } from '../templates.js';
 import { tripProgress, isOpen, bucketFor } from '../domain.js';
-import { esc, fmtRange, icons, saveFile, toast } from '../ui.js';
+import { esc, fmtRange, icons, saveFile, toast, vt } from '../ui.js';
 import { buildICS } from '../ics.js';
 import { rerender } from '../app.js';
 import { backupBanner, todayISO } from './common.js';
@@ -12,7 +12,7 @@ let filter = (() => { try { return localStorage.getItem(PREF) || ''; } catch { r
 function card(trip, today) {
   const p = tripProgress(trip);
   const overdue = trip.tasks.filter((t) => isOpen(t) && bucketFor(t, today) === 'overdue').length;
-  return `<li><a class="card trip-card" href="#/trip/${encodeURIComponent(trip.id)}">
+  return `<li${vt(`c-${trip.id}`)}><a class="card trip-card" href="#/trip/${encodeURIComponent(trip.id)}">
     <div class="trip-card-main">
       <span class="trip-title">${esc(trip.title)}</span>
       <span class="trip-sub">${esc(KINDS[trip.kind].label)} · ${fmtRange(trip.startDate, trip.endDate)}</span>
@@ -45,15 +45,15 @@ export default function trips() {
   if (!all.length) {
     html += `<div class="empty"><p class="empty-title">No trips yet</p><a class="btn primary" href="#/new">Add a trip</a></div>`;
   } else {
-    html += `<section class="group"><h2 class="group-title">Upcoming <span class="count">${upcoming.length}</span></h2>
+    html += `<section class="group"><h2 class="group-title"${vt('s-upcoming')}>Upcoming <span class="count">${upcoming.length}</span></h2>
       ${upcoming.length ? `<ul class="cards trip-grid">${upcoming.map((t) => card(t, today)).join('')}</ul>` : '<p class="muted pad">Nothing upcoming.</p>'}</section>`;
     if (upcoming.length) {
-      html += `<div class="stack"><button class="btn" data-action="icsAll">${upcoming.length === 1
+      html += `<div class="stack"${vt('icsall')}><button class="btn" data-action="icsAll">${upcoming.length === 1
         ? 'Add this trip to Calendar'
         : `Add ${filter ? `these ${upcoming.length}` : `all ${upcoming.length} upcoming`} trips to Calendar`}</button></div>`;
     }
     if (past.length) {
-      html += `<section class="group"><h2 class="group-title">Past <span class="count">${past.length}</span></h2>
+      html += `<section class="group"><h2 class="group-title"${vt('s-past')}>Past <span class="count">${past.length}</span></h2>
         <ul class="cards trip-grid">${past.map((t) => card(t, today)).join('')}</ul></section>`;
     }
   }

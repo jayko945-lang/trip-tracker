@@ -1,6 +1,6 @@
 import * as store from '../store.js';
 import { openTasksByBucket, BUCKETS } from '../domain.js';
-import { esc, toast, icons } from '../ui.js';
+import { esc, toast, icons, vt } from '../ui.js';
 import { rerender } from '../app.js';
 import { backupBanner, taskRow, todayISO } from './common.js';
 
@@ -24,16 +24,16 @@ function section(key, label, list, today) {
   if (!list.length) return '';
   const body = byTrip(list).map(({ trip, items }) => `
     <div class="trip-group">
-      <a class="trip-group-head" href="#/trip/${encodeURIComponent(trip.id)}">
+      <a class="trip-group-head" href="#/trip/${encodeURIComponent(trip.id)}"${vt(`h-${key}-${trip.id}`)}>
         <span>${esc(trip.title)}</span><span class="count">${items.length}</span>${icons.chevron}</a>
       <ul class="tasks">${items.map(({ task }) => taskRow(trip, task, { today, showTrip: true, tripName: false, expanded: expanded === `${trip.id}|${task.key}` })).join('')}</ul>
     </div>`).join('');
   const title = `${label} <span class="count">${list.length}</span>`;
   if (key === 'later') {
     return `<details class="group later" id="later" ${laterOpen ? 'open' : ''}>
-      <summary class="group-title">${title}<span class="summary-hint">${laterOpen ? 'Hide' : 'Show'}</span></summary>${body}</details>`;
+      <summary class="group-title" data-action="toggleLater"${vt('s-later')}>${title}<span class="summary-hint">${laterOpen ? 'Hide' : 'Show'}</span></summary>${body}</details>`;
   }
-  return `<section class="group ${key}"><h2 class="group-title">${title}</h2>${body}</section>`;
+  return `<section class="group ${key}"><h2 class="group-title"${vt(`s-${key}`)}>${title}</h2>${body}</section>`;
 }
 
 /** Save the note in the open panel if it changed. */
@@ -79,13 +79,12 @@ export default function home() {
     mount(root) {
       // Save the note whenever the box loses focus (tab switch, View trip, etc.).
       root.querySelector('.task.expanded [data-note]')?.addEventListener('blur', () => saveOpenNote());
-      const later = root.querySelector('#later');
-      later?.addEventListener('toggle', () => {
-        laterOpen = later.open;
-        later.querySelector('.summary-hint').textContent = laterOpen ? 'Hide' : 'Show';
-      });
     },
     actions: {
+      toggleLater() {
+        laterOpen = !laterOpen;
+        rerender();
+      },
       expand(el) {
         const id = `${el.dataset.trip}|${el.dataset.key}`;
         saveOpenNote();
@@ -104,7 +103,7 @@ export default function home() {
         const prev = t?.status || 'todo';
         el.closest('.task')?.classList.add('completing');
         store.updateTask(trip, key, { status: 'done' });
-        setTimeout(rerender, 250);
+        setTimeout(rerender, 350);
         toast('Marked done', { undo: () => { store.updateTask(trip, key, { status: prev }); rerender(); } });
       },
     },

@@ -1,6 +1,16 @@
 // Small DOM/formatting helpers shared by all views.
 import { parseISO, daysBetween } from './dates.js';
 
+/**
+ * Tag an element so smooth transitions can follow it between redraws
+ * (it slides to its new spot instead of jumping). Names must be unique per screen.
+ */
+export function vt(name) {
+  return ` style="--vt: vt-${String(name).replace(/[^a-zA-Z0-9_-]/g, '_')}"`;
+}
+
+export const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 export function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
@@ -57,6 +67,7 @@ export function toast(message, { undo, duration = 4000 } = {}) {
     el = document.createElement('div');
     el.id = 'toast';
     el.setAttribute('role', 'status');
+    el.style.setProperty('--vt', 'vt-toast');
     document.body.appendChild(el);
   }
   el.innerHTML = `<span>${esc(message)}</span>${undo ? '<button type="button">Undo</button>' : ''}`;
@@ -80,17 +91,25 @@ export function sheet({ title, body, actions = {} }) {
     ${title ? `<h2 class="sheet-title">${esc(title)}</h2>` : ''}${body}</div>`;
   document.body.appendChild(dlg);
   dlg.addEventListener('click', (e) => {
-    if (e.target === dlg) return dlg.close(); // backdrop
+    if (e.target === dlg) return closeSheet(dlg); // backdrop
     const btn = e.target.closest('[data-sa]');
     if (!btn) return;
     e.preventDefault();
     const fn = actions[btn.dataset.sa];
     const keep = fn ? fn(btn, dlg) === false : false;
-    if (!keep) dlg.close();
+    if (!keep) closeSheet(dlg);
   });
   dlg.addEventListener('close', () => dlg.remove());
   dlg.showModal();
   return dlg;
+}
+
+/** Slide the sheet away, then close it. */
+export function closeSheet(dlg) {
+  if (!dlg.open || dlg.classList.contains('closing')) return;
+  if (reduceMotion()) return dlg.close();
+  dlg.classList.add('closing');
+  setTimeout(() => dlg.close(), 200);
 }
 
 export function confirmSheet(message, { ok = 'OK', danger = false } = {}) {

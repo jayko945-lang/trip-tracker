@@ -13,6 +13,7 @@ An offline web app for one teacher to track field trips, robotics events and ove
 - **Undo instead of "Are you sure?"**: deleting a trip or a custom task, removing a no-school date or class/team, and resetting lead times all happen right away with an Undo button. Importing a backup still asks first, because it replaces everything.
 - **Updates**: when a new version has downloaded, a "A new version is ready" bar appears. Tap **Reload** to switch to it.
 - **Text size**: on iPhone, text follows Settings → Display & Brightness → Text Size.
+- **Animations**: rows slide into place when tasks are checked off, drop-downs open and close smoothly, and sheets slide in and out (iOS 18 or newer). Turning on Settings → Accessibility → Motion → Reduce Motion switches them off.
 
 ## Screen sizes
 

@@ -1,7 +1,7 @@
 import * as store from '../store.js';
 import { daysBetween, todayISO } from '../dates.js';
 import { effectiveDue, bucketFor, isOpen } from '../domain.js';
-import { esc, fmtDate, relDays, icons } from '../ui.js';
+import { esc, fmtDate, relDays, icons, vt } from '../ui.js';
 
 export const BACKUP_REMINDER_DAYS = 30;
 
@@ -14,7 +14,7 @@ export function backupBanner() {
   const age = last ? daysBetween(last, today) : Infinity;
   if (age < BACKUP_REMINDER_DAYS) return '';
   const msg = last ? `Last backup was ${age} days ago.` : 'You have never backed up.';
-  return `<a class="banner warn" href="#/settings">${icons.warn}
+  return `<a class="banner warn" href="#/settings"${vt('banner')}>${icons.warn}
     <span><strong>${msg}</strong> iPhone can clear web app data. Tap to export a backup.</span></a>`;
 }
 
@@ -60,7 +60,7 @@ export function taskRow(trip, task, { today, showTrip = false, tripName = showTr
         <a class="btn" href="#/trip/${encodeURIComponent(trip.id)}">View trip</a>
       </div>
     </div>` : '';
-  return `<li class="${cls}">${check}${bodyEl}${panel}</li>`;
+  return `<li class="${cls}"${vt(`t-${trip.id}-${task.key}`)}>${check}${bodyEl}${panel}</li>`;
 }
 
 export { todayISO };
