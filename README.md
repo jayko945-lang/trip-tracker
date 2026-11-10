@@ -4,7 +4,7 @@ An offline web app for one teacher to track field trips, robotics events and ove
 
 ## Features
 
-- **To do** (Home): every open task across all trips, grouped Overdue / Needs a due date / Today / This week / Later, and within each section grouped by trip. **Later** is collapsed until you tap Show. Tap the circle to complete a task (Undo is offered); tap the text or the trip name to open the trip. Trips that ended more than 7 days ago drop off this screen.
+- **To do** (Home): every open task across all trips, grouped Overdue / Needs a due date / Today / This week / Later, and within each section grouped by trip. **Later** is collapsed until you tap Show. Tap the circle to complete a task (Undo is offered). Tap the task's text to drop down a note box with **Save note** and **View trip**; tap it again to close. Tap the trip name to open the trip. Trips that ended more than 7 days ago drop off this screen.
 - **Trips**: upcoming and past trips, filterable by class or team.
 - **Trip detail**: checklist grouped by due date, flags, student count, chaperone-ratio warning, cost, amount collected and outstanding, and notes. Tap a task to override its due date, mark it N/A, set the date for a manual-date task, or add a short **note** (for example a bus confirmation number). Notes show under the task and save however you close the sheet. You can add your own tasks.
 - **New/Edit trip**: choosing a kind presets the flags. Changing a flag adds or removes tasks; completed tasks are never lost (they move to "Completed, no longer required").

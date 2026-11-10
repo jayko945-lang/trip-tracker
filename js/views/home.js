@@ -6,6 +6,9 @@ import { backupBanner, taskRow, todayISO } from './common.js';
 
 // "Later" starts collapsed; remember if it was opened while the app is running.
 let laterOpen = false;
+// The task whose drop-down panel is open ("tripId|key"), if any.
+let expanded = null;
+window.addEventListener('hashchange', () => { expanded = null; });
 
 /** Split a bucket's tasks into per-trip groups, ordered by each trip's earliest due date. */
 function byTrip(list) {
@@ -23,7 +26,7 @@ function section(key, label, list, today) {
     <div class="trip-group">
       <a class="trip-group-head" href="#/trip/${encodeURIComponent(trip.id)}">
         <span>${esc(trip.title)}</span><span class="count">${items.length}</span>${icons.chevron}</a>
-      <ul class="tasks">${items.map(({ task }) => taskRow(trip, task, { today, showTrip: true, tripName: false })).join('')}</ul>
+      <ul class="tasks">${items.map(({ task }) => taskRow(trip, task, { today, showTrip: true, tripName: false, expanded: expanded === `${trip.id}|${task.key}` })).join('')}</ul>
     </div>`).join('');
   const title = `${label} <span class="count">${list.length}</span>`;
   if (key === 'later') {
@@ -31,6 +34,19 @@ function section(key, label, list, today) {
       <summary class="group-title">${title}<span class="summary-hint">${laterOpen ? 'Hide' : 'Show'}</span></summary>${body}</details>`;
   }
   return `<section class="group ${key}"><h2 class="group-title">${title}</h2>${body}</section>`;
+}
+
+/** Save the note in the open panel if it changed. */
+function saveOpenNote(announce = false) {
+  const box = document.querySelector('.task.expanded [data-note]');
+  if (!expanded || !box) return;
+  const [tripId, key] = expanded.split('|');
+  const task = store.getTrip(tripId)?.tasks.find((t) => t.key === key);
+  const note = box.value.trim();
+  if (task && note !== (task.note || '')) {
+    store.updateTask(tripId, key, { note });
+    if (announce) toast(note ? 'Note saved' : 'Note removed', { duration: 1800 });
+  }
 }
 
 export default function home() {
@@ -61,6 +77,8 @@ export default function home() {
     right: '<a class="tb-btn" href="#/new" aria-label="New trip">New</a>',
     html,
     mount(root) {
+      // Save the note whenever the box loses focus (tab switch, View trip, etc.).
+      root.querySelector('.task.expanded [data-note]')?.addEventListener('blur', () => saveOpenNote());
       const later = root.querySelector('#later');
       later?.addEventListener('toggle', () => {
         laterOpen = later.open;
@@ -68,7 +86,19 @@ export default function home() {
       });
     },
     actions: {
+      expand(el) {
+        const id = `${el.dataset.trip}|${el.dataset.key}`;
+        saveOpenNote();
+        expanded = expanded === id ? null : id;
+        rerender();
+      },
+      saveNote(el) {
+        saveOpenNote(true);
+        expanded = null;
+        rerender();
+      },
       toggle(el) {
+        saveOpenNote();
         const { trip, key } = el.dataset;
         const t = store.getTrip(trip)?.tasks.find((x) => x.key === key);
         const prev = t?.status || 'todo';
