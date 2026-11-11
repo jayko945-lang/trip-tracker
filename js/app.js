@@ -148,6 +148,17 @@ setTimeout(measureBottomStrip, 500);
 for (const ev of ['resize', 'orientationchange', 'pageshow']) addEventListener(ev, () => setTimeout(measureBottomStrip, 50));
 document.addEventListener('visibilitychange', () => { if (!document.hidden) measureBottomStrip(); });
 
+// With the bug, the page is a strip taller than iOS's viewport so it can draw to
+// the bottom; it must never actually scroll (that would slide the header under
+// the status bar). Snap it back, except while typing, when iOS may need to shift
+// the page to keep the field above the keyboard.
+const typing = () => document.activeElement?.matches?.('input, textarea, select');
+function unshiftPage() {
+  if (document.documentElement.classList.contains('has-strip') && window.scrollY && !typing()) window.scrollTo(0, 0);
+}
+addEventListener('scroll', unshiftPage, { passive: true });
+document.addEventListener('focusout', () => setTimeout(unshiftPage, 100));
+
 store.load();
 render();
 

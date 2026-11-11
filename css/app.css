@@ -61,15 +61,7 @@ html { -webkit-text-size-adjust: 100%; font-size: 17px; }
    rather than sized with 100vh/100dvh, which iOS home-screen apps report as
    shorter than the screen, leaving the tab bar floating above the bottom. */
 html, body { height: 100%; }
-/* iOS 26+ home-screen bug: with a see-through status bar, iOS lays the page out
-   one status-bar height short of the bottom and only paints the page background
-   in that strip. The tab bar floats above it, so the strip matches the page. */
 html { background: var(--bg); }
-/* iOS cuts content off at that line; fade the list out there instead of a hard edge */
-html.has-strip .main {
-  -webkit-mask-image: linear-gradient(#000 calc(100% - 22px), transparent);
-  mask-image: linear-gradient(#000 calc(100% - 22px), transparent);
-}
 body {
   display: flex; flex-direction: column;
   position: fixed; inset: 0; overflow: hidden;
@@ -510,3 +502,16 @@ html.vt-nav [style*="--vt"] { view-transition-name: none; }
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
 }
+
+/* ---- iOS 26+ home-screen bug ------------------------------------------------------
+   With a see-through status bar, iOS lays home-screen apps out one status-bar
+   height (--app-gap, measured by app.js) short of the bottom, and won't draw
+   pinned (position: fixed) content below that line. It does draw normal page
+   content there. So when the bug is detected, the page itself is made that much
+   taller and the shell becomes normal page content instead of pinned. */
+html.has-strip {
+  height: calc(100% + var(--app-gap));
+  overflow: hidden; /* the extra height is for drawing, not for scrolling */
+  --bar-bottom: calc(max(var(--safe-bottom), 14px) + 4px);
+}
+html.has-strip body { position: relative; inset: auto; height: 100%; }

@@ -85,7 +85,7 @@ export default function settingsView() {
     // Screen measurements, to diagnose layout problems from a screenshot.
     const si = screenInfo();
     root.querySelector('#screen-info').textContent =
-      `Screen ${si.screenW}×${si.screenH} · window ${si.winW}×${si.winH} · ${si.standalone ? 'home screen' : 'browser'}${si.gap ? ` · bottom strip ${si.gap}` : ''}`;
+      `Screen ${si.screenW}×${si.screenH} · window ${si.winW}×${si.winH} · ${si.standalone ? 'home screen' : 'browser'}${si.gap ? ` · bottom strip ${si.gap}` : ''} · bar ${Math.round(si.screenH - document.querySelector('.tabbar').getBoundingClientRect().bottom)} from bottom`;
     root.querySelector('#workdays-toggle').addEventListener('change', (e) => {
       store.updateSettings({ workdaysCountAsSchool: e.target.checked });
       toast('Due dates updated');
