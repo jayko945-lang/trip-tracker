@@ -52,11 +52,13 @@ html { -webkit-text-size-adjust: 100%; font-size: 17px; }
   html { font: -apple-system-body; }
 }
 /* App shell: header and tab bar are part of the layout; only <main> scrolls.
-   Avoids iOS home-screen bugs where fixed bars drift on long pages. */
+   The shell is pinned to the real screen edges (position: fixed; inset: 0)
+   rather than sized with 100vh/100dvh, which iOS home-screen apps report as
+   shorter than the screen, leaving the tab bar floating above the bottom. */
 html, body { height: 100%; }
 body {
   display: flex; flex-direction: column;
-  height: 100vh; height: 100dvh; overflow: hidden;
+  position: fixed; inset: 0; overflow: hidden;
   margin: 0;
   background: var(--bg);
   color: var(--text);
