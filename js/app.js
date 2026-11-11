@@ -104,12 +104,7 @@ document.addEventListener('click', (e) => {
 
 window.addEventListener('hashchange', () => transition(() => render(), { nav: true }));
 
-// ---- iOS home-screen bottom strip --------------------------------------------
-// iOS 26+ lays out home-screen apps (see-through status bar) one status-bar
-// height short of the bottom and won't draw fixed content below that line.
-// Measure that strip with a probe pinned top-to-bottom; CSS colours the strip
-// like the tab bar and drops the bar's now-redundant bottom padding.
-
+// ---- screen info (shown at the bottom of Settings, to diagnose layout issues) --
 export function screenInfo() {
   const portrait = innerHeight >= innerWidth;
   const long = Math.max(screen.width, screen.height);
@@ -120,46 +115,16 @@ export function screenInfo() {
     screenH: portrait ? long : short,
     winW: innerWidth,
     winH: innerHeight,
-    gap: Number.parseFloat(document.documentElement.style.getPropertyValue('--app-gap')) || 0,
   };
 }
 
-const MAX_GAP = 80;
-function measureBottomStrip() {
-  const root = document.documentElement;
-  const s = screenInfo();
-  const probe = document.createElement('div');
-  probe.style.cssText = 'position:fixed;top:0;bottom:0;left:0;width:0;visibility:hidden;pointer-events:none;';
-  document.body.appendChild(probe);
-  const laidOut = probe.getBoundingClientRect().height;
-  probe.remove();
-  const gap = Math.round(s.screenH - laidOut);
-  // Only from the home screen, full width (not side-by-side), and status-bar sized.
-  const bug = s.standalone && Math.abs(s.winW - s.screenW) <= 1 && laidOut > 0 && gap > 0 && gap <= MAX_GAP;
-  if (bug) {
-    root.style.setProperty('--app-gap', `${gap}px`);
-    root.classList.add('has-strip');
-  } else {
-    root.style.removeProperty('--app-gap');
-    root.classList.remove('has-strip');
-  }
-  // Remember it so the next launch can apply it before the first frame (index.html).
-  if (s.standalone && laidOut > 0) {
-    try { localStorage.setItem(`tripTracker.strip.${s.screenW}x${s.screenH}`, String(bug ? gap : 0)); } catch { /* ignore */ }
-  }
-}
-measureBottomStrip();
-setTimeout(measureBottomStrip, 500);
-for (const ev of ['resize', 'orientationchange', 'pageshow']) addEventListener(ev, () => setTimeout(measureBottomStrip, 50));
-document.addEventListener('visibilitychange', () => { if (!document.hidden) measureBottomStrip(); });
-
-// With the bug, the page is a strip taller than iOS's viewport so it can draw to
-// the bottom; it must never actually scroll (that would slide the header under
-// the status bar). Snap it back, except while typing, when iOS may need to shift
-// the page to keep the field above the keyboard.
+// The home-screen layout is a full screen tall (see the CSS); the page itself
+// must never scroll, or the header would slide under the status bar. Put it
+// back if something scrolls it, except while typing (iOS may shift the page to
+// keep a field above the keyboard).
 const typing = () => document.activeElement?.matches?.('input, textarea, select');
 function unshiftPage() {
-  if (document.documentElement.classList.contains('has-strip') && window.scrollY && !typing()) window.scrollTo(0, 0);
+  if (window.scrollY && !typing()) window.scrollTo(0, 0);
 }
 addEventListener('scroll', unshiftPage, { passive: true });
 document.addEventListener('focusout', () => setTimeout(unshiftPage, 100));

@@ -25,8 +25,7 @@
   /* Floating tab bar: its gap above the screen bottom. Clears the home
      indicator like native iOS apps; on the iOS 26 home-screen bug the strip iOS
      leaves already provides that space, so the bar rests on the layout edge. */
-  --bar-bottom: max(0px, calc(max(var(--safe-bottom), 14px) + 4px - var(--app-gap)));
-  --app-gap: 0px; /* height of the iOS bottom strip, measured by app.js (0 when there's no bug) */
+  --bar-bottom: calc(max(var(--safe-bottom), 14px) + 4px);
   color-scheme: light dark;
 }
 
@@ -503,15 +502,13 @@ html.vt-nav [style*="--vt"] { view-transition-name: none; }
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
 }
 
-/* ---- iOS 26+ home-screen bug ------------------------------------------------------
-   With a see-through status bar, iOS lays home-screen apps out one status-bar
-   height (--app-gap, measured by app.js) short of the bottom, and won't draw
-   pinned (position: fixed) content below that line. It does draw normal page
-   content there. So when the bug is detected, the page itself is made that much
-   taller and the shell becomes normal page content instead of pinned. */
-html.has-strip {
-  height: calc(100% + var(--app-gap));
-  overflow: hidden; /* the extra height is for drawing, not for scrolling */
-  --bar-bottom: calc(max(var(--safe-bottom), 14px) + 4px);
+/* ---- installed (home-screen) app -------------------------------------------------
+   iOS 26+ home-screen apps with a see-through status bar get a layout area one
+   status-bar height short of the screen, and pinned (position: fixed) content
+   isn't drawn below it. Making the page exactly one screen tall (100vh) as
+   normal page content reaches the real bottom. Static CSS: nothing is measured
+   or adjusted at runtime, so nothing moves on launch. */
+@media (display-mode: standalone) {
+  html { height: 100vh; overflow: hidden; }
+  body { position: relative; inset: auto; height: 100%; }
 }
-html.has-strip body { position: relative; inset: auto; height: 100%; }
