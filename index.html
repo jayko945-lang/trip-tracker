@@ -19,6 +19,27 @@
   <meta name="color-scheme" content="light dark">
   <meta name="format-detection" content="telephone=no">
 
+  <script>
+    // iOS 26+ home-screen bug fix (see measureBottomStrip in js/app.js), applied
+    // here before the first frame so the tab bar doesn't jump on launch. Uses
+    // the live window size, or the value remembered from the last launch.
+    (function () {
+      try {
+        var d = document.documentElement;
+        if (!(navigator.standalone === true || matchMedia('(display-mode: standalone)').matches)) return;
+        var portrait = innerHeight >= innerWidth;
+        var lo = Math.min(screen.width, screen.height), hi = Math.max(screen.width, screen.height);
+        var sw = portrait ? lo : hi, sh = portrait ? hi : lo;
+        if (Math.abs(innerWidth - sw) > 1) return; // side-by-side window
+        var gap = innerHeight > 0 ? Math.round(sh - innerHeight) : 0;
+        if (!(gap > 0 && gap <= 80)) gap = Number(localStorage.getItem('tripTracker.strip.' + sw + 'x' + sh)) || 0;
+        if (gap > 0 && gap <= 80) {
+          d.style.setProperty('--app-gap', gap + 'px');
+          d.classList.add('has-strip');
+        }
+      } catch (e) { /* app.js measures again after load */ }
+    })();
+  </script>
   <link rel="stylesheet" href="css/app.css">
   <script type="module" src="js/app.js"></script>
 </head>

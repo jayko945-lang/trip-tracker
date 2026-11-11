@@ -135,12 +135,17 @@ function measureBottomStrip() {
   probe.remove();
   const gap = Math.round(s.screenH - laidOut);
   // Only from the home screen, full width (not side-by-side), and status-bar sized.
-  if (s.standalone && Math.abs(s.winW - s.screenW) <= 1 && laidOut > 0 && gap > 0 && gap <= MAX_GAP) {
+  const bug = s.standalone && Math.abs(s.winW - s.screenW) <= 1 && laidOut > 0 && gap > 0 && gap <= MAX_GAP;
+  if (bug) {
     root.style.setProperty('--app-gap', `${gap}px`);
     root.classList.add('has-strip');
   } else {
     root.style.removeProperty('--app-gap');
     root.classList.remove('has-strip');
+  }
+  // Remember it so the next launch can apply it before the first frame (index.html).
+  if (s.standalone && laidOut > 0) {
+    try { localStorage.setItem(`tripTracker.strip.${s.screenW}x${s.screenH}`, String(bug ? gap : 0)); } catch { /* ignore */ }
   }
 }
 measureBottomStrip();
