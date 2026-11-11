@@ -137,8 +137,10 @@ function measureBottomStrip() {
   // Only from the home screen, full width (not side-by-side), and status-bar sized.
   if (s.standalone && Math.abs(s.winW - s.screenW) <= 1 && laidOut > 0 && gap > 0 && gap <= MAX_GAP) {
     root.style.setProperty('--app-gap', `${gap}px`);
+    root.classList.add('has-strip');
   } else {
     root.style.removeProperty('--app-gap');
+    root.classList.remove('has-strip');
   }
 }
 measureBottomStrip();

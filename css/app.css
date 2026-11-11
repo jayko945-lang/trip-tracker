@@ -21,7 +21,11 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
-  --tabbar-h: 58px;
+  --tabbar-h: 62px;
+  /* Floating tab bar: its gap above the screen bottom. Clears the home
+     indicator like native iOS apps; on the iOS 26 home-screen bug the strip iOS
+     leaves already provides that space, so the bar rests on the layout edge. */
+  --bar-bottom: max(0px, calc(max(var(--safe-bottom), 14px) + 4px - var(--app-gap)));
   --app-gap: 0px; /* height of the iOS bottom strip, measured by app.js (0 when there's no bug) */
   color-scheme: light dark;
 }
@@ -58,10 +62,14 @@ html { -webkit-text-size-adjust: 100%; font-size: 17px; }
    shorter than the screen, leaving the tab bar floating above the bottom. */
 html, body { height: 100%; }
 /* iOS 26+ home-screen bug: with a see-through status bar, iOS lays the page out
-   one status-bar height short of the bottom and won't draw fixed content in
-   that strip; only the page background shows there. Paint it the tab bar's
-   colour so the bar reads as reaching the bottom edge. */
-html { background: var(--surface); }
+   one status-bar height short of the bottom and only paints the page background
+   in that strip. The tab bar floats above it, so the strip matches the page. */
+html { background: var(--bg); }
+/* iOS cuts content off at that line; fade the list out there instead of a hard edge */
+html.has-strip .main {
+  -webkit-mask-image: linear-gradient(#000 calc(100% - 22px), transparent);
+  mask-image: linear-gradient(#000 calc(100% - 22px), transparent);
+}
 body {
   display: flex; flex-direction: column;
   position: fixed; inset: 0; overflow: hidden;
@@ -107,23 +115,32 @@ ul { list-style: none; margin: 0; padding: 0; }
 }
 .content {
   max-width: 720px; margin: 0 auto;
-  padding: 12px calc(16px + var(--safe-right)) 28px calc(16px + var(--safe-left));
+  /* bottom padding lets the last item scroll clear of the floating tab bar */
+  padding: 12px calc(16px + var(--safe-right)) calc(var(--tabbar-h) + var(--bar-bottom) + 24px) calc(16px + var(--safe-left));
 }
 
+/* Floating pill tab bar; the page scrolls behind it */
 .tabbar {
-  position: relative; z-index: 10; flex: none;
-  display: grid; grid-template-columns: repeat(3, 1fr);
-  padding: 0 var(--safe-right) max(0px, calc(var(--safe-bottom) - var(--app-gap))) var(--safe-left);
-  background: var(--surface);
-  -webkit-backdrop-filter: saturate(180%) blur(16px);
-  backdrop-filter: saturate(180%) blur(16px);
-  border-top: 1px solid var(--line);
+  position: absolute; z-index: 10;
+  left: calc(12px + var(--safe-left)); right: calc(12px + var(--safe-right));
+  bottom: var(--bar-bottom);
+  max-width: 520px; margin: 0 auto;
+  height: var(--tabbar-h); padding: 5px;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 93%, transparent);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 28px rgb(0 0 0 / .22);
 }
 .tabbar a {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-  height: var(--tabbar-h); color: var(--muted); font-size: min(0.647rem, 13px); font-weight: 550;
+  height: 100%; border-radius: 999px;
+  color: var(--muted); font-size: min(0.647rem, 13px); font-weight: 600;
+  transition: background-color .2s, color .2s;
 }
-.tabbar a.active { color: var(--accent); }
+.tabbar a.active { color: var(--accent); background: var(--accent-soft); }
 
 /* ---- text & sections -------------------------------------------------------- */
 .section-title { font-size: 1.176rem; font-weight: 700; margin: 26px 4px 10px; }
@@ -331,7 +348,7 @@ dialog.sheet::backdrop { background: rgb(0 0 0 / .4); }
 @keyframes fade-out { to { opacity: 0; } }
 
 #toast {
-  position: fixed; left: 50%; bottom: calc(var(--tabbar-h) + max(0px, calc(var(--safe-bottom) - var(--app-gap))) + 14px); z-index: 50;
+  position: fixed; left: 50%; bottom: calc(var(--tabbar-h) + var(--bar-bottom) + 12px); z-index: 50;
   transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
   display: flex; align-items: center; gap: 14px; max-width: calc(100% - 32px);
   padding: 12px 16px; border-radius: 14px; background: var(--text); color: var(--bg); font-weight: 550;
@@ -401,9 +418,6 @@ dialog.sheet::backdrop { background: rgb(0 0 0 / .4); }
   /* Forms stay a comfortable reading width */
   #trip-form { max-width: 640px; margin: 0 auto; }
   .chips.scroll { margin: 0; padding-left: 0; padding-right: 0; flex-wrap: wrap; }
-
-  /* Tab bar items don't stretch across a wide screen */
-  .tabbar { grid-template-columns: repeat(3, minmax(0, 150px)); justify-content: center; }
 }
 
 /* Wide and tall enough: sheets become centered dialogs instead of bottom sheets */
