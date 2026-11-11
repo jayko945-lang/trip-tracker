@@ -3,7 +3,7 @@ import { DEFAULT_TEMPLATES, getTemplates } from '../templates.js';
 import { isISODate, daysBetween } from '../dates.js';
 import { esc, fmtDate, fmtRange, sheet, confirmSheet, toast, saveFile, icons } from '../ui.js';
 import { SCHOOL_YEAR } from '../seed.js';
-import { rerender } from '../app.js';
+import { rerender, screenInfo } from '../app.js';
 import { BACKUP_REMINDER_DAYS, todayISO } from './common.js';
 
 const GROUP_ORDER = (t) => (t.unit === 'manual' ? 1e6 : t.unit === 'calendar' ? 1e5 + t.n : -t.n);
@@ -78,9 +78,14 @@ export default function settingsView() {
   <div class="stack"><button class="btn subtle" data-action="resetTemplates">Reset lead times to defaults</button></div>
 
   </div></div>
-  <p class="muted small center pad">Trip Tracker · data stays on this device · no student names or grades</p>`;
+  <p class="muted small center pad">Trip Tracker · data stays on this device · no student names or grades</p>
+  <p class="muted small center pad" id="screen-info"></p>`;
 
   function mount(root) {
+    // Screen measurements, to diagnose layout problems from a screenshot.
+    const si = screenInfo();
+    root.querySelector('#screen-info').textContent =
+      `Screen ${si.screenW}×${si.screenH} · window ${si.winW}×${si.winH} · ${si.standalone ? 'home screen' : 'browser'}${si.gap ? ` · adjusted +${si.gap}` : ''}`;
     root.querySelector('#workdays-toggle').addEventListener('change', (e) => {
       store.updateSettings({ workdaysCountAsSchool: e.target.checked });
       toast('Due dates updated');

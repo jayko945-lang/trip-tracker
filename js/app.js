@@ -104,6 +104,46 @@ document.addEventListener('click', (e) => {
 
 window.addEventListener('hashchange', () => transition(() => render(), { nav: true }));
 
+// ---- fit to the real screen (iOS home-screen viewport bug) -------------------
+// Some iOS versions tell home-screen apps the viewport is shorter than the
+// screen (by about the status-bar height), which leaves the tab bar floating
+// above the bottom edge. When the app is full-screen and that happens, size the
+// shell to the real screen height instead.
+
+export function screenInfo() {
+  const portrait = innerHeight >= innerWidth;
+  const long = Math.max(screen.width, screen.height);
+  const short = Math.min(screen.width, screen.height);
+  return {
+    standalone: navigator.standalone === true || matchMedia('(display-mode: standalone)').matches,
+    screenW: portrait ? short : long,
+    screenH: portrait ? long : short,
+    winW: innerWidth,
+    winH: innerHeight,
+    gap: Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--app-gap')) || 0,
+  };
+}
+
+function fitToScreen() {
+  const root = document.documentElement;
+  root.classList.remove('fit-screen');
+  root.style.removeProperty('--app-h');
+  root.style.removeProperty('--app-gap');
+  const s = screenInfo();
+  const bodyH = document.body.getBoundingClientRect().height;
+  const gap = Math.round(s.screenH - bodyH);
+  // Only when running from the home screen, full width (not side-by-side), and
+  // short by a status-bar-sized amount.
+  if (s.standalone && Math.abs(s.winW - s.screenW) <= 1 && gap > 0 && gap <= 120) {
+    root.style.setProperty('--app-h', `${s.screenH}px`);
+    root.style.setProperty('--app-gap', `${gap}px`);
+    root.classList.add('fit-screen');
+  }
+}
+fitToScreen();
+addEventListener('resize', fitToScreen);
+addEventListener('orientationchange', () => setTimeout(fitToScreen, 300));
+
 store.load();
 render();
 
