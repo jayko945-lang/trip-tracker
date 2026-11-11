@@ -104,11 +104,11 @@ document.addEventListener('click', (e) => {
 
 window.addEventListener('hashchange', () => transition(() => render(), { nav: true }));
 
-// ---- fit to the real screen (iOS home-screen viewport bug) -------------------
-// Some iOS versions tell home-screen apps the viewport is shorter than the
-// screen (by about the status-bar height), which leaves the tab bar floating
-// above the bottom edge. When the app is full-screen and that happens, size the
-// shell to the real screen height instead.
+// ---- iOS home-screen bottom strip --------------------------------------------
+// iOS 26+ lays out home-screen apps (see-through status bar) one status-bar
+// height short of the bottom and won't draw fixed content below that line.
+// Measure that strip with a probe pinned top-to-bottom; CSS colours the strip
+// like the tab bar and drops the bar's now-redundant bottom padding.
 
 export function screenInfo() {
   const portrait = innerHeight >= innerWidth;
@@ -120,29 +120,31 @@ export function screenInfo() {
     screenH: portrait ? long : short,
     winW: innerWidth,
     winH: innerHeight,
-    gap: Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--app-gap')) || 0,
+    gap: Number.parseFloat(document.documentElement.style.getPropertyValue('--app-gap')) || 0,
   };
 }
 
-function fitToScreen() {
+const MAX_GAP = 80;
+function measureBottomStrip() {
   const root = document.documentElement;
-  root.classList.remove('fit-screen');
-  root.style.removeProperty('--app-h');
-  root.style.removeProperty('--app-gap');
   const s = screenInfo();
-  const bodyH = document.body.getBoundingClientRect().height;
-  const gap = Math.round(s.screenH - bodyH);
-  // Only when running from the home screen, full width (not side-by-side), and
-  // short by a status-bar-sized amount.
-  if (s.standalone && Math.abs(s.winW - s.screenW) <= 1 && gap > 0 && gap <= 120) {
-    root.style.setProperty('--app-h', `${s.screenH}px`);
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position:fixed;top:0;bottom:0;left:0;width:0;visibility:hidden;pointer-events:none;';
+  document.body.appendChild(probe);
+  const laidOut = probe.getBoundingClientRect().height;
+  probe.remove();
+  const gap = Math.round(s.screenH - laidOut);
+  // Only from the home screen, full width (not side-by-side), and status-bar sized.
+  if (s.standalone && Math.abs(s.winW - s.screenW) <= 1 && laidOut > 0 && gap > 0 && gap <= MAX_GAP) {
     root.style.setProperty('--app-gap', `${gap}px`);
-    root.classList.add('fit-screen');
+  } else {
+    root.style.removeProperty('--app-gap');
   }
 }
-fitToScreen();
-addEventListener('resize', fitToScreen);
-addEventListener('orientationchange', () => setTimeout(fitToScreen, 300));
+measureBottomStrip();
+setTimeout(measureBottomStrip, 500);
+for (const ev of ['resize', 'orientationchange', 'pageshow']) addEventListener(ev, () => setTimeout(measureBottomStrip, 50));
+document.addEventListener('visibilitychange', () => { if (!document.hidden) measureBottomStrip(); });
 
 store.load();
 render();

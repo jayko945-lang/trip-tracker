@@ -22,7 +22,7 @@
   --safe-left: env(safe-area-inset-left, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
   --tabbar-h: 58px;
-  --app-gap: 0px; /* set by app.js when iOS reports a viewport shorter than the screen */
+  --app-gap: 0px; /* height of the iOS bottom strip, measured by app.js (0 when there's no bug) */
   color-scheme: light dark;
 }
 
@@ -57,10 +57,11 @@ html { -webkit-text-size-adjust: 100%; font-size: 17px; }
    rather than sized with 100vh/100dvh, which iOS home-screen apps report as
    shorter than the screen, leaving the tab bar floating above the bottom. */
 html, body { height: 100%; }
-html { background: var(--bg); }
-/* iOS home-screen apps can report a viewport shorter than the screen; app.js
-   then sizes the shell to the real screen so the tab bar reaches the bottom. */
-html.fit-screen body { bottom: auto; height: var(--app-h); }
+/* iOS 26+ home-screen bug: with a see-through status bar, iOS lays the page out
+   one status-bar height short of the bottom and won't draw fixed content in
+   that strip; only the page background shows there. Paint it the tab bar's
+   colour so the bar reads as reaching the bottom edge. */
+html { background: var(--surface); }
 body {
   display: flex; flex-direction: column;
   position: fixed; inset: 0; overflow: hidden;
@@ -112,8 +113,8 @@ ul { list-style: none; margin: 0; padding: 0; }
 .tabbar {
   position: relative; z-index: 10; flex: none;
   display: grid; grid-template-columns: repeat(3, 1fr);
-  padding: 0 var(--safe-right) var(--safe-bottom) var(--safe-left);
-  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  padding: 0 var(--safe-right) max(0px, calc(var(--safe-bottom) - var(--app-gap))) var(--safe-left);
+  background: var(--surface);
   -webkit-backdrop-filter: saturate(180%) blur(16px);
   backdrop-filter: saturate(180%) blur(16px);
   border-top: 1px solid var(--line);
@@ -312,7 +313,7 @@ select { background-image: linear-gradient(45deg, transparent 50%, var(--muted) 
 
 /* ---- sheet / toast ----------------------------------------------------------------- */
 dialog.sheet {
-  margin: auto auto calc(0px - var(--app-gap)); width: 100%; max-width: 560px; max-height: 88vh; padding: 0; border: 0;
+  margin: auto auto 0; width: 100%; max-width: 560px; max-height: 88vh; padding: 0; border: 0;
   background: var(--surface); color: var(--text); border-radius: 20px 20px 0 0;
   animation: up .3s cubic-bezier(.2, .8, .2, 1);
 }
@@ -330,7 +331,7 @@ dialog.sheet::backdrop { background: rgb(0 0 0 / .4); }
 @keyframes fade-out { to { opacity: 0; } }
 
 #toast {
-  position: fixed; left: 50%; bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 14px - var(--app-gap)); z-index: 50;
+  position: fixed; left: 50%; bottom: calc(var(--tabbar-h) + max(0px, calc(var(--safe-bottom) - var(--app-gap))) + 14px); z-index: 50;
   transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
   display: flex; align-items: center; gap: 14px; max-width: calc(100% - 32px);
   padding: 12px 16px; border-radius: 14px; background: var(--text); color: var(--bg); font-weight: 550;
