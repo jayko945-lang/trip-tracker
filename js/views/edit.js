@@ -1,6 +1,6 @@
 import * as store from '../store.js';
 import { KINDS, FLAGS } from '../templates.js';
-import { openTasksByBucket } from '../domain.js';
+import { openTasksByBucket, rosterStats } from '../domain.js';
 import { esc, toast } from '../ui.js';
 import { todayISO } from './common.js';
 
@@ -11,6 +11,10 @@ export default function editView(id) {
     kind: 'field', title: '', tags: [], startDate: '', endDate: '', destination: '',
     flags: { ...KINDS.field.flags }, studentCount: '', chaperones: [], costPerStudent: '', amountCollected: '', notes: '',
   };
+  // With a student list, the count (and, once anyone has paid, the amount) come from it.
+  const roster = existing ? rosterStats(existing) : { total: 0, paid: 0 };
+  const countFromRoster = roster.total > 0;
+  const paidFromRoster = roster.total > 0 && roster.paid > 0 && existing.costPerStudent > 0;
   const allTags = [...new Set([...store.getSettings().tags, ...t.tags])];
   const back = existing ? `#/trip/${encodeURIComponent(existing.id)}` : '#/';
 
@@ -51,15 +55,16 @@ export default function editView(id) {
     </fieldset>
 
     <div class="field-row">
-      <label class="field"><span>Students</span><input name="studentCount" type="number" inputmode="numeric" min="0" step="1" value="${esc(t.studentCount)}"></label>
+      <label class="field"><span>Students</span><input name="studentCount" type="number" inputmode="numeric" min="0" step="1" value="${esc(t.studentCount)}"${countFromRoster ? ' readonly' : ''}></label>
       <label class="field"><span>Cost per student</span><input name="costPerStudent" type="number" inputmode="decimal" min="0" step="0.01" value="${esc(t.costPerStudent)}"></label>
     </div>
-    <label class="field"><span>Amount collected</span><input name="amountCollected" type="number" inputmode="decimal" min="0" step="0.01" value="${esc(t.amountCollected)}"></label>
+    <label class="field"><span>Amount collected</span><input name="amountCollected" type="number" inputmode="decimal" min="0" step="0.01" value="${esc(t.amountCollected)}"${paidFromRoster ? ' readonly' : ''}></label>
+    ${countFromRoster ? `<p class="muted small">The student count${paidFromRoster ? ' and amount collected come' : ' comes'} from this trip's student list.</p>` : ''}
 
     <label class="field"><span>Chaperones (one per line)</span><textarea name="chaperones" rows="3">${esc(t.chaperones.join('\n'))}</textarea></label>
 
     <label class="field"><span>Notes</span><textarea name="notes" rows="4" placeholder="Contacts, times, reminders">${esc(t.notes)}</textarea></label>
-    <p class="muted small">Don't enter student names or grades. Keep rosters in the district system.</p>
+    <p class="muted small">Add student names on the trip's Students screen (they stay on this phone). Don't enter grades or medical details.</p>
 
     <p class="form-error" id="form-error" role="alert"></p>
     <div class="stack">

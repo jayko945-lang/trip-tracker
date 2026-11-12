@@ -6,11 +6,13 @@ import trips from './views/trips.js';
 import trip from './views/trip.js';
 import edit from './views/edit.js';
 import settings from './views/settings.js';
+import students from './views/students.js';
 
 const routes = [
   [/^#?\/?(home)?$/, home, 'home'],
   [/^#\/trips$/, trips, 'trips'],
   [/^#\/trip\/([^/]+)$/, trip, 'trips'],
+  [/^#\/trip\/([^/]+)\/students$/, students, 'trips'],
   [/^#\/new$/, edit, 'new'],
   [/^#\/edit\/([^/]+)$/, edit, 'trips'],
   [/^#\/settings$/, settings, 'settings'],

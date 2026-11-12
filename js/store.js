@@ -2,7 +2,7 @@
 // and import are a straight copy. Never stores student names or grades.
 import { buildClosedSet, isISODate } from './dates.js';
 import { getTemplates, KINDS } from './templates.js';
-import { refreshTrip } from './domain.js';
+import { refreshTrip, applyRoster, parseNames, withoutStudents } from './domain.js';
 import { SEED_NO_SCHOOL } from './seed.js';
 
 const KEY = 'tripTracker.v1';
@@ -19,6 +19,7 @@ function defaultSettings() {
     workdaysCountAsSchool: false,
     templateOverrides: {},
     tags: [],
+    rosters: {}, // class/team name -> student names (personal info, device only)
     lastBackupAt: null,
   };
 }
@@ -37,6 +38,7 @@ function normalizeTask(t) {
     inactive: !!t.inactive,
     custom: !!t.custom,
     note: str(t.note, 1000),
+    autoDone: !!t.autoDone,
   };
 }
 
@@ -61,6 +63,10 @@ function normalizeTrip(t) {
     amountCollected: num(t.amountCollected),
     notes: str(t.notes, 20000),
     tasks: Array.isArray(t.tasks) ? t.tasks.map(normalizeTask) : [],
+    // Personal information: kept on this device only (see withoutStudents for backups)
+    students: Array.isArray(t.students) ? t.students.filter((x) => x && typeof x.name === 'string' && x.name.trim()).map((x) => ({
+      id: str(x.id, 100) || uid(), name: str(x.name, 120).trim(), slip: !!x.slip, medical: !!x.medical, paid: !!x.paid,
+    })) : [],
     createdAt: t.createdAt || new Date().toISOString(),
     updatedAt: t.updatedAt || new Date().toISOString(),
   };
@@ -93,7 +99,19 @@ function normalizeSettings(s = {}) {
     templateOverrides: overrides,
     tags: Array.isArray(s.tags) ? [...new Set(s.tags.map((x) => str(x, 80).trim()).filter(Boolean))] : [],
     lastBackupAt: s.lastBackupAt || null,
+    rosters: normalizeRosters(s.rosters),
   };
+}
+
+function normalizeRosters(r) {
+  const out = {};
+  if (!r || typeof r !== 'object') return out;
+  for (const [tag, names] of Object.entries(r)) {
+    if (!Array.isArray(names)) continue;
+    const list = parseNames(names.filter((n) => typeof n === 'string').join('\n'));
+    if (list.length) out[str(tag, 80)] = list;
+  }
+  return out;
 }
 
 function normalizeState(raw) {
@@ -195,6 +213,7 @@ export function updateTask(tripId, key, patch) {
     if (t.key !== key) return t;
     const next = { ...t, ...patch };
     if ('status' in patch) next.completedAt = patch.status === 'done' ? new Date().toISOString() : null;
+    if ('status' in patch) next.autoDone = false; // set by hand from now on
     return next;
   });
   trip.updatedAt = new Date().toISOString();
@@ -229,6 +248,59 @@ export function restoreTask({ tripId, task, index }) {
   persist();
 }
 
+// ---- students (personal info: this device only) -------------------------------
+
+function changeRoster(tripId, fn) {
+  const trip = getTrip(tripId);
+  if (!trip) return null;
+  const students = fn(trip.students.map((x) => ({ ...x })));
+  const next = applyRoster({ ...trip, students, updatedAt: new Date().toISOString() }, { formsChanged: true });
+  state.trips = state.trips.map((t) => (t.id === tripId ? next : t));
+  persist();
+  return next;
+}
+
+/** Add names (pasted list or single name). Returns how many were new. */
+export function addStudents(tripId, text) {
+  const trip = getTrip(tripId);
+  if (!trip) return 0;
+  const names = parseNames(text, trip.students.map((x) => x.name));
+  if (names.length) changeRoster(tripId, (list) => [...list, ...names.map((name) => ({ id: uid(), name, slip: false, medical: false, paid: false }))]);
+  return names.length;
+}
+
+export function updateStudent(tripId, id, patch) {
+  changeRoster(tripId, (list) => list.map((x) => (x.id === id ? { ...x, ...patch, name: (patch.name ?? x.name).trim() || x.name } : x)));
+}
+
+/** Removes a student; returns what restoreStudent needs to undo it. */
+export function removeStudent(tripId, id) {
+  const trip = getTrip(tripId);
+  const index = trip?.students.findIndex((x) => x.id === id) ?? -1;
+  if (index < 0) return null;
+  const student = trip.students[index];
+  changeRoster(tripId, (list) => list.filter((x) => x.id !== id));
+  return { tripId, student, index };
+}
+
+export function restoreStudent({ tripId, student, index }) {
+  changeRoster(tripId, (list) => {
+    if (list.some((x) => x.id === student.id)) return list;
+    const copy = [...list];
+    copy.splice(Math.min(index, copy.length), 0, student);
+    return copy;
+  });
+}
+
+/** Save a class/team roster (names only) for quick adding to future trips. */
+export function setTeamRoster(tag, text) {
+  const rosters = { ...state.settings.rosters };
+  const names = parseNames(text);
+  if (names.length) rosters[tag] = names; else delete rosters[tag];
+  state.settings.rosters = rosters;
+  persist();
+}
+
 // ---- settings ---------------------------------------------------------------
 
 export function updateSettings(patch) {
@@ -250,6 +322,10 @@ export function renameTag(oldName, newName) {
   newName = newName.trim();
   if (!newName || oldName === newName) return;
   state.settings.tags = [...new Set(state.settings.tags.map((t) => (t === oldName ? newName : t)))];
+  if (state.settings.rosters[oldName]) {
+    state.settings.rosters[newName] = state.settings.rosters[oldName];
+    delete state.settings.rosters[oldName];
+  }
   state.trips = state.trips.map((trip) => ({
     ...trip, tags: [...new Set(trip.tags.map((t) => (t === oldName ? newName : t)))],
   }));
@@ -264,9 +340,14 @@ export function removeTag(name) {
 
 // ---- backup -----------------------------------------------------------------
 
-export function exportJSON() {
-  return JSON.stringify({ ...state, exportedAt: new Date().toISOString(), app: 'trip-tracker' }, null, 2);
+/** Backup file. Student names are included only when asked. */
+export function exportJSON({ includeStudents = false } = {}) {
+  const data = includeStudents ? { ...state, studentsIncluded: true } : withoutStudents(state);
+  return JSON.stringify({ ...data, exportedAt: new Date().toISOString(), app: 'trip-tracker' }, null, 2);
 }
+
+export const hasStudentData = () =>
+  state.trips.some((t) => t.students.length) || Object.keys(state.settings.rosters).length > 0;
 
 export function markBackedUp() {
   state.settings.lastBackupAt = new Date().toISOString();
@@ -279,7 +360,15 @@ export function importJSON(text) {
   if (!raw || typeof raw !== 'object' || !Array.isArray(raw.trips) || typeof raw.settings !== 'object') {
     throw new Error('This file is not a Trip Tracker backup.');
   }
+  const before = state;
   state = normalizeState(raw);
+  // A backup made without names must not wipe the names on this phone:
+  // keep this phone's rosters for the same trips.
+  if (raw.studentsIncluded === false) {
+    const kept = new Map(before.trips.map((t) => [t.id, t.students]));
+    state.trips = state.trips.map((t) => ({ ...t, students: kept.get(t.id) || [] }));
+    state.settings.rosters = before.settings.rosters;
+  }
   refreshAll();
   persist();
   return state.trips.length;

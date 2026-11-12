@@ -4,7 +4,7 @@
 // is told an update is ready, and can ask for every file to be refreshed
 // before it reloads (so it never runs a mix of old and new files).
 // Bump VERSION when you add or rename files.
-const VERSION = 'v15';
+const VERSION = 'v16';
 const CACHE = `trip-tracker-${VERSION}`;
 const FILES = [
   './',
@@ -23,6 +23,7 @@ const FILES = [
   './js/views/edit.js',
   './js/views/home.js',
   './js/views/settings.js',
+  './js/views/students.js',
   './js/views/trip.js',
   './js/views/trips.js',
   './icons/apple-touch-icon.png',

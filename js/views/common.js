@@ -1,6 +1,6 @@
 import * as store from '../store.js';
 import { daysBetween, todayISO } from '../dates.js';
-import { effectiveDue, bucketFor, isOpen } from '../domain.js';
+import { effectiveDue, bucketFor, isOpen, rosterStats, FORMS_TASK } from '../domain.js';
 import { esc, fmtDate, relDays, icons, vt } from '../ui.js';
 
 export const BACKUP_REMINDER_DAYS = 30;
@@ -36,6 +36,10 @@ export function taskRow(trip, task, { today, showTrip = false, tripName = showTr
     meta.push(esc(rule)); // trip detail: the date is already in the group heading
   }
   if (!due && open) meta.push('<span class="rel">Set a due date</span>');
+  if (task.key === FORMS_TASK && trip.students?.length) {
+    const st = rosterStats(trip);
+    meta.push(`<span class="${st.allFormsIn ? 'ok' : ''}">${st.formsIn}/${st.total} in</span>`);
+  }
   if (task.status === 'na') meta.push('Not applicable');
   if (task.inactive) meta.push('No longer required');
   const badges = [];

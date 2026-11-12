@@ -23,7 +23,7 @@ export default function settingsView() {
     <p class="${stale ? 'warn' : ''}">${last
       ? `Last backed up <strong>${fmtDate(last.slice(0, 10), { year: true })}</strong> (${backupAge === 0 ? 'today' : `${backupAge} day${backupAge === 1 ? '' : 's'} ago`})`
       : '<strong>Never backed up</strong>'}</p>
-    <p class="muted small">iPhone may clear web app data if storage runs low. Export a backup to Files or iCloud Drive at least monthly.</p>
+    <p class="muted small">iPhone may clear web app data if storage runs low. Export a backup to Files at least monthly. Student names are left out unless you choose to include them.</p>
     <div class="stack">
       <button class="btn primary" data-action="export">Export backup (JSON)</button>
       <button class="btn" data-action="import">Import backup</button>
@@ -50,7 +50,7 @@ export default function settingsView() {
   <h2 class="section-title">Classes and teams</h2>
   <div class="card">
     <div class="chips">${s.tags.length
-      ? s.tags.map((t) => `<button class="chip" data-action="editTag" data-tag="${esc(t)}">${esc(t)}</button>`).join('')
+      ? s.tags.map((t) => `<button class="chip" data-action="editTag" data-tag="${esc(t)}">${esc(t)}${s.rosters[t] ? ` <span class="count">${s.rosters[t].length}</span>` : ''}</button>`).join('')
       : '<span class="muted small">None yet.</span>'}</div>
     <form class="inline-add" id="tag-form">
       <input name="tag" placeholder="Add class or team" maxlength="80" autocomplete="off" enterkeyhint="done">
@@ -78,7 +78,7 @@ export default function settingsView() {
   <div class="stack"><button class="btn subtle" data-action="resetTemplates">Reset lead times to defaults</button></div>
 
   </div></div>
-  <p class="muted small center pad">Trip Tracker · data stays on this device · no student names or grades</p>
+  <p class="muted small center pad">Trip Tracker · your data stays on this phone · student names are never put in calendar files or uploaded</p>
   <p class="muted small center pad" id="screen-info"></p>`;
 
   function mount(root) {
@@ -138,12 +138,27 @@ export default function settingsView() {
     html,
     mount,
     actions: {
-      async export() {
-        const name = `trip-tracker-backup-${today}.json`;
-        if (await saveFile(name, 'application/json', store.exportJSON())) {
-          store.markBackedUp();
-          rerender();
-        }
+      export() {
+        const save = async (includeStudents) => {
+          const name = `trip-tracker-backup-${today}${includeStudents ? '-with-names' : ''}.json`;
+          if (await saveFile(name, 'application/json', store.exportJSON({ includeStudents }))) {
+            store.markBackedUp();
+            rerender();
+          }
+        };
+        if (!store.hasStudentData()) return save(false);
+        // Student names are personal info: only in the file if chosen, every time.
+        sheet({
+          title: 'Include student names?',
+          body: `<div class="stack">
+            <p class="muted small">Student names are kept only on this phone. A backup without names still has every trip, task and setting, and restoring it keeps the names already on this phone.</p>
+            <button class="btn primary" data-sa="without">Back up without names</button>
+            <button class="btn" data-sa="with">Include names</button>
+            <p class="muted small">If you include names, save the file only somewhere approved for student information, like "On My iPhone" or your school Google Drive.</p>
+            <button class="btn subtle" data-sa="cancel">Cancel</button>
+          </div>`,
+          actions: { without() { save(false); }, with() { save(true); } },
+        });
       },
       import() { document.getElementById('import-file').click(); },
       addDay() { dayForm(); },
@@ -208,10 +223,13 @@ function dayForm(entry) {
 }
 
 function tagSheet(tag) {
+  const roster = store.getSettings().rosters[tag] || [];
   sheet({
     title: tag,
     body: `<div class="form">
       <label class="field"><span>Rename (updates all trips)</span><input name="name" value="${esc(tag)}" maxlength="80"></label>
+      <label class="field"><span>Roster: one student per line (kept on this phone only)</span>
+        <textarea name="roster" rows="6" placeholder="Saved names can be added to a trip in one tap">${esc(roster.join('\n'))}</textarea></label>
       <div class="stack">
         <button class="btn primary" data-sa="rename">Save</button>
         <button class="btn danger subtle" data-sa="remove">Remove from list</button>
@@ -219,7 +237,12 @@ function tagSheet(tag) {
       </div>
       <p class="muted small">Removing hides it from the pick list. Trips keep the tag.</p></div>`,
     actions: {
-      rename(btn, dlg) { store.renameTag(tag, dlg.querySelector('[name=name]').value); rerender(); },
+      rename(btn, dlg) {
+        const newName = dlg.querySelector('[name=name]').value.trim() || tag;
+        store.renameTag(tag, newName);
+        store.setTeamRoster(newName, dlg.querySelector('[name=roster]').value);
+        rerender();
+      },
       remove() {
         const before = store.snapshotSettings();
         store.removeTag(tag);

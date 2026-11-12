@@ -1,6 +1,6 @@
 import * as store from '../store.js';
 import { KINDS, FLAGS } from '../templates.js';
-import { effectiveDue, chaperoneCheck, ruleText, tripProgress, isOpen, bucketFor } from '../domain.js';
+import { effectiveDue, chaperoneCheck, ruleText, tripProgress, isOpen, bucketFor, rosterStats, ROSTER_CHECKS } from '../domain.js';
 import { buildICS } from '../ics.js';
 import { esc, fmtDate, fmtRange, relDays, money, icons, sheet, toast, saveFile, vt } from '../ui.js';
 import { rerender } from '../app.js';
@@ -33,6 +33,20 @@ function checklist(trip, today, tplByKey) {
       <ul class="tasks">${retired.map((t) => taskRow(trip, t, { today })).join('')}</ul></section>`;
   }
   return html;
+}
+
+/** Summary of the roster with a link to the Students screen. */
+function studentsCard(trip) {
+  const st = rosterStats(trip);
+  const href = `#/trip/${encodeURIComponent(trip.id)}/students`;
+  const body = st.total
+    ? ROSTER_CHECKS.map(([k, label]) => `<div class="meter"><div class="meter-top"><span>${label}</span>
+        <span class="${st[k] === st.total ? 'ok' : ''}">${st[k]}/${st.total}</span></div>
+        <div class="meter-bar"><i style="width:${(st[k] / st.total) * 100}%"></i></div></div>`).join('')
+    : '<p class="muted small">Add students to check off permission slips, medical forms and payments.</p>';
+  return `<a class="card students-card" href="${href}"${vt('students-card')}>
+    <span class="students-head"><span>Students${st.total ? ` <span class="count">${st.total}</span>` : ''}</span>${icons.chevron}</span>
+    ${body}</a>`;
 }
 
 export default function tripView(id) {
@@ -76,6 +90,7 @@ export default function tripView(id) {
         <div><dt>Outstanding</dt><dd class="${expected - trip.amountCollected > 0 ? 'warn' : ''}">${money(Math.max(0, expected - trip.amountCollected))}</dd></div>
       </dl>` : ''}
     </div>
+    ${studentsCard(trip)}
 
     </div>
     <div class="d-list">
