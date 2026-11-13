@@ -121,13 +121,8 @@ export function ruleText(tpl) {
 // ---- student roster ------------------------------------------------------------
 // Student names are personal information: they live on this device only and are
 // never put in calendar files, and backups include them only if asked.
-
-/** The per-student checkboxes, in display order. */
-export const ROSTER_CHECKS = [
-  ['slip', 'Permission slip', 'Slip'],
-  ['medical', 'Medical form', 'Medical'],
-  ['paid', 'Paid', 'Paid'],
-];
+// One check per student: permission slip turned in (it includes the medical
+// form). Payment isn't tracked: a student who's eligible to go has paid.
 
 /** The task that the roster can complete on its own. */
 export const FORMS_TASK = 'permissionDue';
@@ -147,27 +142,22 @@ export function parseNames(text, existing = []) {
 
 export function rosterStats(trip) {
   const list = trip.students || [];
-  const count = (k) => list.filter((s) => s[k]).length;
-  const slip = count('slip');
-  const medical = count('medical');
-  const formsIn = list.filter((s) => s.slip && s.medical).length;
-  return { total: list.length, slip, medical, paid: count('paid'), formsIn, allFormsIn: list.length > 0 && formsIn === list.length };
+  const slipsIn = list.filter((s) => s.slip).length;
+  return { total: list.length, slipsIn, allIn: list.length > 0 && slipsIn === list.length };
 }
 
-/** Students still missing something, grouped by what's missing. */
-export function missingByCheck(trip) {
-  const out = {};
-  for (const [key] of ROSTER_CHECKS) out[key] = (trip.students || []).filter((s) => !s[key]).map((s) => s.name);
-  return out;
+/** Names of students who haven't turned in their slip, A to Z. */
+export function missingSlips(trip) {
+  return (trip.students || []).filter((s) => !s.slip).map((s) => s.name)
+    .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
 }
 
 /**
  * Keep trip fields in step with its roster (when it has one):
  * - student count = number of students
- * - amount collected = paid students x cost (once anyone is marked paid)
- * - with { formsChanged: true } (a checkbox on the roster was just changed), the
- *   "forms collected" task checks itself off when every slip and medical form
- *   is in, and un-checks if one is later unmarked (only if it did so itself).
+ * - with { formsChanged: true } (a slip was just checked or unchecked), the
+ *   "slips collected" task checks itself off when every slip is in, and
+ *   un-checks if one is later unmarked (only if it checked itself off).
  *   Only on roster changes, so unchecking the task by hand sticks.
  */
 export function applyRoster(trip, { formsChanged = false, now = new Date().toISOString() } = {}) {
@@ -175,14 +165,11 @@ export function applyRoster(trip, { formsChanged = false, now = new Date().toISO
   if (!list.length) return trip;
   const stats = rosterStats(trip);
   const next = { ...trip, studentCount: stats.total };
-  if (stats.paid > 0 && trip.costPerStudent > 0) {
-    next.amountCollected = Math.round(stats.paid * trip.costPerStudent * 100) / 100;
-  }
   if (!formsChanged) return next;
   next.tasks = (trip.tasks || []).map((t) => {
     if (t.key !== FORMS_TASK || t.inactive) return t;
-    if (stats.allFormsIn && t.status === 'todo') return { ...t, status: 'done', completedAt: now, autoDone: true };
-    if (!stats.allFormsIn && t.status === 'done' && t.autoDone) return { ...t, status: 'todo', completedAt: null, autoDone: false };
+    if (stats.allIn && t.status === 'todo') return { ...t, status: 'done', completedAt: now, autoDone: true };
+    if (!stats.allIn && t.status === 'done' && t.autoDone) return { ...t, status: 'todo', completedAt: null, autoDone: false };
     return t;
   });
   return next;

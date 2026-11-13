@@ -526,23 +526,20 @@ html.vt-nav [style*="--vt"] { view-transition-name: none; }
 
 .roster-summary { margin-bottom: 12px; }
 .roster-filter { margin-bottom: 12px; }
-.students .student { display: grid; grid-template-columns: 1fr; gap: 8px; padding: 10px 14px 12px; }
-.student-name {
-  background: none; border: 0; padding: 4px 0; text-align: left; color: inherit;
-  font-weight: 600; min-height: 36px;
+.students .student { display: flex; align-items: stretch; }
+.student-toggle {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px;
+  min-height: 56px; padding: 8px 4px 8px 14px;
+  background: none; border: 0; text-align: left; color: inherit; cursor: pointer;
 }
-.student-checks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-.scheck {
-  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
-  min-height: 44px; padding: 0 8px; border-radius: 12px;
-  border: 1px solid var(--line); background: var(--surface); color: var(--muted);
-  font-size: 0.882rem; font-weight: 600; cursor: pointer;
-  transition: background-color .15s, color .15s, border-color .15s;
+.slip-check svg {
+  width: 28px; height: 28px; padding: 3px; border-radius: 50%; box-sizing: border-box;
+  border: 2px solid var(--muted); color: transparent;
+  transition: background-color .2s, border-color .2s, transform .2s cubic-bezier(.3, 1.6, .5, 1);
 }
-.scheck svg { width: 16px; height: 16px; opacity: .35; }
-.scheck.on { background: color-mix(in srgb, var(--ok) 16%, transparent); border-color: var(--ok); color: var(--ok); }
-.scheck.on svg { opacity: 1; }
+.student.in .slip-check svg { background: var(--ok); border-color: var(--ok); color: var(--accent-text); }
+.student-name { flex: 1; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+.slip-state { font-size: 0.824rem; color: var(--muted); white-space: nowrap; }
+.student.in .slip-state { color: var(--ok); font-weight: 600; }
+.student-more { flex: none; width: 48px; background: none; border: 0; color: var(--muted); cursor: pointer; }
 .add-student { margin-top: 16px; }
-@media (min-width: 600px) {
-  .students .student { grid-template-columns: 1fr minmax(0, 330px); align-items: center; }
-}

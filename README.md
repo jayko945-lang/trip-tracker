@@ -6,7 +6,7 @@ An offline web app for one teacher to track field trips, robotics events and ove
 
 - **To do** (Home): every open task across all trips, grouped Overdue / Needs a due date / Today / This week / Later, and within each section grouped by trip. **Later** is collapsed until you tap Show. Tap the circle to complete a task (Undo is offered). Tap the task's text to drop down a note box with **Save note** and **View trip**; tap it again to close. Tap the trip name to open the trip. Trips that ended more than 7 days ago drop off this screen.
 - **Trips**: upcoming and past trips, filterable by class or team.
-- **Students** (per trip): add names one at a time, paste a whole list, or add a saved class/team roster in one tap. Check off **Permission slip**, **Medical form** and **Paid** per student, filter to who's missing something, and copy a "still missing" list to paste into an email. The student count and amount collected fill in from the list, and the "Permission slips and medical forms collected" task checks itself off when every form is in.
+- **Students** (per trip): add names one at a time, paste a whole list, or add a saved class/team roster in one tap. Tap a student when their permission slip (which includes the medical form) comes in, filter to who hasn't turned one in, and copy that list to paste into an email. The student count fills in from the list, and the "Permission slips and medical forms collected" task checks itself off when every slip is in.
 - **Trip detail**: checklist grouped by due date, flags, student count, chaperone-ratio warning, cost, amount collected and outstanding, and notes. Tap a task to override its due date, mark it N/A, set the date for a manual-date task, or add a short **note** (for example a bus confirmation number). Notes show under the task and save however you close the sheet. You can add your own tasks.
 - **New/Edit trip**: choosing a kind presets the flags. Changing a flag adds or removes tasks; completed tasks are never lost (they move to "Completed, no longer required").
 - **Settings**: no-school calendar (single dates and ranges, "No students" or "Student-free workday", plus a toggle for whether workdays count as school days, default off), class/team list, editable lead times and labels, and JSON backup/restore with a "last backed up" date. A reminder banner appears 30 days after the last backup.
@@ -122,11 +122,11 @@ iOS can delete web app data if the phone runs low on storage, or if the app isn'
 ## Privacy
 
 - Everything you enter is stored only on this phone (in the app's local storage). The public GitHub repository holds only the app's code, never your data.
-- **Student names** can be added to a trip's **Students** screen and to saved class/team rosters, to check off permission slips, medical forms and payments. They are personal information:
+- **Student names** can be added to a trip's **Students** screen and to saved class/team rosters, to check off permission slips as they come in. They are personal information:
   - stored only on this phone;
   - never put in calendar (`.ics`) files;
   - left out of backups unless you choose **Include names** when exporting. A backup made without names still restores every trip and keeps the names already on the phone.
-- No grades or medical details are stored, only whether each form has been turned in.
+- No grades or medical details are stored, only whether each permission slip has been turned in.
 
 ## Out of scope for v1
 

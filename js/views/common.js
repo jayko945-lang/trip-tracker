@@ -38,7 +38,7 @@ export function taskRow(trip, task, { today, showTrip = false, tripName = showTr
   if (!due && open) meta.push('<span class="rel">Set a due date</span>');
   if (task.key === FORMS_TASK && trip.students?.length) {
     const st = rosterStats(trip);
-    meta.push(`<span class="${st.allFormsIn ? 'ok' : ''}">${st.formsIn}/${st.total} in</span>`);
+    meta.push(`<span class="${st.allIn ? 'ok' : ''}">${st.slipsIn}/${st.total} in</span>`);
   }
   if (task.status === 'na') meta.push('Not applicable');
   if (task.inactive) meta.push('No longer required');

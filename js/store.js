@@ -65,7 +65,7 @@ function normalizeTrip(t) {
     tasks: Array.isArray(t.tasks) ? t.tasks.map(normalizeTask) : [],
     // Personal information: kept on this device only (see withoutStudents for backups)
     students: Array.isArray(t.students) ? t.students.filter((x) => x && typeof x.name === 'string' && x.name.trim()).map((x) => ({
-      id: str(x.id, 100) || uid(), name: str(x.name, 120).trim(), slip: !!x.slip, medical: !!x.medical, paid: !!x.paid,
+      id: str(x.id, 100) || uid(), name: str(x.name, 120).trim(), slip: !!x.slip,
     })) : [],
     createdAt: t.createdAt || new Date().toISOString(),
     updatedAt: t.updatedAt || new Date().toISOString(),
@@ -265,7 +265,7 @@ export function addStudents(tripId, text) {
   const trip = getTrip(tripId);
   if (!trip) return 0;
   const names = parseNames(text, trip.students.map((x) => x.name));
-  if (names.length) changeRoster(tripId, (list) => [...list, ...names.map((name) => ({ id: uid(), name, slip: false, medical: false, paid: false }))]);
+  if (names.length) changeRoster(tripId, (list) => [...list, ...names.map((name) => ({ id: uid(), name, slip: false }))]);
   return names.length;
 }
 
